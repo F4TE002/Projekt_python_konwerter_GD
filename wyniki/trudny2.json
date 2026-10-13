@@ -1,0 +1,30 @@
+[
+  {
+    "id": "1",
+    "miasto": "Opole",
+    "opis": "Stolica województwa, nad Odrą",
+    "telefon": "774001234",
+    "uwagi": ""
+  },
+  {
+    "id": "2",
+    "miasto": "Wrocław",
+    "opis": "Mówią na nie \"Wenecja Północy\"",
+    "telefon": "713005678",
+    "uwagi": "brak"
+  },
+  {
+    "id": "3",
+    "miasto": "Kraków",
+    "opis": "Opis\nw dwóch liniach",
+    "telefon": "",
+    "uwagi": "pole z przecinkiem, i cudzysłowem \"x\""
+  },
+  {
+    "id": "4",
+    "miasto": "Łódź",
+    "opis": "Zwykły opis",
+    "telefon": "426001122",
+    "uwagi": ""
+  }
+]

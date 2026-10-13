@@ -1,0 +1,6 @@
+[
+  {"id": 101, "nazwa": "Klawiatura mechaniczna", "kategoria": "Peryferia", "cena": 249.99, "dostepny": true},
+  {"id": 102, "nazwa": "Mysz bezprzewodowa", "kategoria": "Peryferia", "cena": 89.5, "dostepny": true},
+  {"id": 103, "nazwa": "Monitor 27\"", "kategoria": "Monitory", "cena": 1199.0, "dostepny": false},
+  {"id": 104, "nazwa": "Kabel HDMI 2m", "kategoria": "Akcesoria", "cena": 19.99, "dostepny": true}
+]

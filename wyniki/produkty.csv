@@ -1,0 +1,5 @@
+id,nazwa,kategoria,cena,dostepny
+101,Klawiatura mechaniczna,Peryferia,249.99,True
+102,Mysz bezprzewodowa,Peryferia,89.5,True
+103,"Monitor 27""",Monitory,1199.0,False
+104,Kabel HDMI 2m,Akcesoria,19.99,True

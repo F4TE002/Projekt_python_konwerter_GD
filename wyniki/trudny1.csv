@@ -1,0 +1,5 @@
+id,nazwa,ocena,komentarz,dodatkowe_pole
+1,Zadanie A,5,"Bardzo dobrze, bez uwag",
+2,Zadanie B,,Nie oddano,
+3,Zadanie C,4,,tylko w tym rekordzie
+4,"Zadanie ""D""",3.5,Zawiera cudzysłów i polskie znaki: żółć,

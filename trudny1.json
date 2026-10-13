@@ -1,0 +1,6 @@
+[
+  {"id": 1, "nazwa": "Zadanie A", "ocena": 5, "komentarz": "Bardzo dobrze, bez uwag"},
+  {"id": 2, "nazwa": "Zadanie B", "ocena": null, "komentarz": "Nie oddano"},
+  {"id": 3, "nazwa": "Zadanie C", "ocena": 4, "dodatkowe_pole": "tylko w tym rekordzie"},
+  {"id": 4, "nazwa": "Zadanie \"D\"", "ocena": 3.5, "komentarz": "Zawiera cudzysłów i polskie znaki: żółć"}
+]
