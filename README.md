@@ -1,0 +1,1 @@
+Aby przekonwertować plik należy go umieścić w tym samym folderze, w którym znajduje się skrypt python. Następnie wejść w ten skrypt i na samym jego dole znajdują się dwie linie, w których trzeba zmienić nazwę pliku, aby przekonwertować kolejno: CSV -> JSON, JSON ->CSV
