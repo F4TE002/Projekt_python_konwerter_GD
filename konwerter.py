@@ -3,6 +3,7 @@ from pathlib import Path
 from collections.abc import Callable
 import csv
 import json
+import shutil
 import subprocess
 
 Converter = Callable[[Path, Path], Path]
@@ -38,22 +39,111 @@ def available_targets(source: Path) -> list[str]:
     return sorted(target for (src, target) in REGISTRY if src == source.suffix.lower())
 
 
-# konwertery z instrukcji
+# LAB 3: narzędzie zewnętrzne LibreOffice (DOCX, ODT, PDF)
 # ---------------------------------------------------------------------------
+
+class ToolNotFoundError(RuntimeError):
+    """Błąd: brak wymaganego narzędzia zewnętrznego lub biblioteki."""
+
+
+# Typowe miejsca instalacji LibreOffice na Windowsie (zwykle NIE ma go w PATH)
+WINDOWS_LIBREOFFICE_PATHS = [
+    Path(r"C:\Program Files\LibreOffice\program\soffice.exe"),
+    Path(r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"),
+]
+
+
+def find_libreoffice() -> str:
+    """Zwraca ścieżkę do programu LibreOffice albo zgłasza ToolNotFoundError."""
+    # 1. Szukamy w PATH (Linux, macOS, Windows z dodanym PATH)
+    for name in ("soffice", "libreoffice"):
+        found = shutil.which(name)
+        if found:
+            return found
+    # 2. Szukamy w domyślnych folderach instalacji na Windowsie
+    for path in WINDOWS_LIBREOFFICE_PATHS:
+        if path.is_file():
+            return str(path)
+    raise ToolNotFoundError(
+        "Nie znaleziono LibreOffice. Zainstaluj go ze strony "
+        "https://www.libreoffice.org/download/ i uruchom program ponownie."
+    )
+
+
+def run_libreoffice(source: Path, output_dir: Path, target_ext: str, lo_format: str) -> Path:
+    """Wywołuje LibreOffice w trybie bez okna i zwraca ścieżkę do pliku wynikowego."""
+    soffice = find_libreoffice()
+
+    # Polecenie jako LISTA argumentów -> bez shell=True (bezpieczniej:
+    # nazwa pliku nie jest interpretowana przez powłokę systemową)
+    command = [
+        soffice, "--headless", "--convert-to", lo_format,
+        "--outdir", str(output_dir), str(source)
+    ]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=60)
+    except FileNotFoundError as e:
+        raise ToolNotFoundError(f"Nie udało się uruchomić LibreOffice: {e}") from e
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError("LibreOffice nie zakończył pracy w ciągu 60 sekund") from e
+
+    # Kod zakończenia: 0 = sukces, cokolwiek innego = błąd
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"LibreOffice zakończył się kodem {result.returncode}: "
+            f"{result.stderr.strip() or 'brak opisu błędu'}"
+        )
+
+    target = output_dir / f"{source.stem}{target_ext}"
+    if not target.exists():
+        raise RuntimeError(
+            "LibreOffice nie utworzył pliku wynikowego "
+            "(zamknij otwarte okna LibreOffice i spróbuj ponownie)"
+        )
+    return target
+
 
 @converter(".docx", ".pdf")
 def docx_to_pdf(source: Path, output_dir: Path) -> Path:
-    command = [
-        "libreoffice", "--headless", "--convert-to", "pdf",
-        "--outdir", str(output_dir), str(source)
-    ]
-    result = subprocess.run(command, capture_output=True, text=True, timeout=60)
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or "Konwersja nie powiodła się")
-    target = output_dir / f"{source.stem}.pdf"
-    if not target.exists():
-        raise RuntimeError("Narzędzie nie utworzyło oczekiwanego pliku")
+    return run_libreoffice(source, output_dir, ".pdf", "pdf")
+
+
+@converter(".odt", ".pdf")
+def odt_to_pdf(source: Path, output_dir: Path) -> Path:
+    return run_libreoffice(source, output_dir, ".pdf", "pdf")
+
+
+@converter(".docx", ".odt")
+def docx_to_odt(source: Path, output_dir: Path) -> Path:
+    return run_libreoffice(source, output_dir, ".odt", "odt")
+
+
+@converter(".odt", ".docx")
+def odt_to_docx(source: Path, output_dir: Path) -> Path:
+    return run_libreoffice(source, output_dir, ".docx", "docx:MS Word 2007 XML")
+
+# ---------------------------------------------------------------------------
+
+
+# LAB 3: PDF -> TXT (biblioteka Pythona pypdf, bez narzędzia zewnętrznego)
+# ---------------------------------------------------------------------------
+
+@converter(".pdf", ".txt")
+def pdf_to_txt(source: Path, output_dir: Path) -> Path:
+    try:
+        from pypdf import PdfReader          # import tutaj: brak biblioteki
+    except ImportError as e:                 # nie psuje pozostałych konwersji
+        raise ToolNotFoundError(
+            "Brak biblioteki pypdf. Zainstaluj ją poleceniem: pip install pypdf"
+        ) from e
+
+    reader = PdfReader(source)
+    pages = [page.extract_text() or "" for page in reader.pages]
+
+    target = output_dir / f"{source.stem}.txt"
+    target.write_text("\n\n".join(pages), encoding="utf-8")
     return target
+
 # ---------------------------------------------------------------------------
 
 
@@ -133,9 +223,13 @@ def convert(source: Path, target_format: str, output_dir: Path = Path(".")) -> N
     try:
         wynik = execute(request)
         print(f"Gotowe: {wynik}")
-    except (FileNotFoundError, NotADirectoryError, ValueError, RuntimeError) as e:
+    except ToolNotFoundError as e:
+        print(f"Brak narzędzia: {e}")
+    except ValueError as e:
         print(f"Błąd: {e}")
         print(f"Dostępne formaty dla {source.name}: {available_targets(source)}")
+    except (FileNotFoundError, NotADirectoryError, RuntimeError) as e:
+        print(f"Błąd: {e}")
 
 
 if __name__ == "__main__":
@@ -144,7 +238,20 @@ if __name__ == "__main__":
     wyniki = Path("wyniki")
     wyniki.mkdir(exist_ok=True)           # tworzy folder, jeśli go nie ma
 
-    convert(Path("trudny2.csv"), ".json", wyniki)    # CSV  -> JSON
-    convert(Path("trudny1.json"), ".csv", wyniki)    # JSON -> CS
+    # Lab 2
+    # convert(Path("trudny2.csv"), ".json", wyniki)    # CSV  -> JSON
+    # convert(Path("trudny1.json"), ".csv", wyniki)    # JSON -> CSV
+
+    # Lab 3: najpierw sprawdzamy, czy narzędzie zewnętrzne jest dostępne
+    try:
+        print(f"LibreOffice: {find_libreoffice()}")
+    except ToolNotFoundError as e:
+        print(f"Uwaga: {e}")
+
+    convert(Path("dokument.docx"), ".pdf", wyniki)    # DOCX -> PDF
+    convert(Path("dokument.docx"), ".odt", wyniki)    # DOCX -> ODT
+    convert(Path("notatka.odt"), ".pdf", wyniki)      # ODT  -> PDF
+    convert(Path("notatka.odt"), ".docx", wyniki)     # ODT  -> DOCX
+    convert(wyniki / "dokument.pdf", ".txt", wyniki)  # PDF  -> TXT
     
     # ---------------------------------------------------------------------------
