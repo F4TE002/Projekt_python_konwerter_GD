@@ -32,27 +32,25 @@ class KonwerterApp:
         frame = ttk.Frame(root, padding=16)
         frame.grid()
 
-        # --- Wiersz 1: plik wejściowy ---
+        # --- plik wejściowy ---
         ttk.Label(frame, text="Plik wejściowy:").grid(row=0, column=0, sticky="w", pady=4)
         ttk.Entry(frame, textvariable=self.source_var, width=50, state="readonly").grid(
             row=0, column=1, padx=8)
         ttk.Button(frame, text="Wybierz plik…", command=self.choose_file).grid(row=0, column=2)
 
-        # --- Wiersz 2: katalog docelowy ---
+        # --- katalog docelowy ---
         ttk.Label(frame, text="Katalog docelowy:").grid(row=1, column=0, sticky="w", pady=4)
         ttk.Entry(frame, textvariable=self.output_var, width=50, state="readonly").grid(
             row=1, column=1, padx=8)
         ttk.Button(frame, text="Wybierz katalog…", command=self.choose_dir).grid(row=1, column=2)
 
-        # --- Wiersz 3: format docelowy (lista zależna od rozszerzenia pliku) ---
+        # --- format docelowy (lista zależna od rozszerzenia) ---
         ttk.Label(frame, text="Format docelowy:").grid(row=2, column=0, sticky="w", pady=4)
-        # state="disabled" na start; później "readonly" = można tylko WYBRAĆ z listy,
-        # nie da się wpisać własnego formatu -> GUI nie przyjmie niedozwolonej pary
         self.format_box = ttk.Combobox(frame, textvariable=self.format_var,
                                        state="disabled", width=15)
         self.format_box.grid(row=2, column=1, sticky="w", padx=8)
 
-        # --- Wiersz 4: komunikat + przycisk ---
+        # --- komunikat + przycisk ---
         ttk.Label(frame, textvariable=self.info_var, foreground="#555", wraplength=420).grid(
             row=3, column=0, columnspan=2, sticky="w", pady=(12, 0))
         self.convert_btn = ttk.Button(frame, text="Konwertuj", command=self.run_conversion,
@@ -105,7 +103,7 @@ class KonwerterApp:
             )
 
     def update_button(self) -> None:
-        """Przycisk 'Konwertuj' jest aktywny tylko dla poprawnej pary formatów."""
+        """Przycisk 'Konwertuj' jest aktywny tylko dla poprawnej pary"""
         source = self.source_var.get()
         ok = bool(source and self.output_var.get() and self.format_var.get()
                   and (Path(source).suffix.lower(), self.format_var.get()) in REGISTRY)

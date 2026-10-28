@@ -24,10 +24,10 @@ class ConversionRequest:
     source: Path
     target_format: str
     output_dir: Path
-    overwrite: bool = False      # LAB 4: czy wolno nadpisać istniejący plik wynikowy
+    overwrite: bool = False      # czy wolno nadpisać istniejący plik wynikowy
 
     def target_path(self) -> Path:
-        """Ścieżka pliku, który powstanie, np. wyniki/dane.json."""
+        #Ścieżka pliku, który powstanie, np. wyniki/dane.json.
         return self.output_dir / f"{self.source.stem}{self.target_format.lower()}"
 
 #walidacja
@@ -52,19 +52,15 @@ def supported_sources() -> list[str]:
     return sorted({src for (src, target) in REGISTRY})
 
 
-# LAB 3: narzędzie zewnętrzne LibreOffice (DOCX, ODT, PDF)
+# LAB 3: LibreOffice
 # ---------------------------------------------------------------------------
 
 class ToolNotFoundError(RuntimeError):
     """Błąd: brak wymaganego narzędzia zewnętrznego lub biblioteki."""
-
-
-# Typowe miejsca instalacji LibreOffice na Windowsie (zwykle NIE ma go w PATH)
 WINDOWS_LIBREOFFICE_PATHS = [
     Path(r"C:\Program Files\LibreOffice\program\soffice.exe"),
     Path(r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"),
 ]
-
 
 def find_libreoffice() -> str:
     """Zwraca ścieżkę do programu LibreOffice albo zgłasza ToolNotFoundError."""
@@ -81,7 +77,6 @@ def find_libreoffice() -> str:
         "Nie znaleziono LibreOffice. Zainstaluj go ze strony "
         "https://www.libreoffice.org/download/ i uruchom program ponownie."
     )
-
 
 def run_libreoffice(source: Path, output_dir: Path, target_ext: str, lo_format: str) -> Path:
     """Wywołuje LibreOffice w trybie bez okna i zwraca ścieżkę do pliku wynikowego."""
@@ -265,17 +260,17 @@ if __name__ == "__main__":
     wyniki = Path("wyniki")
     wyniki.mkdir(exist_ok=True)           # tworzy folder, jeśli go nie ma
 
-    # Lab 2
+    #
     # convert(Path("trudny2.csv"), ".json", wyniki)    # CSV  -> JSON
     # convert(Path("trudny1.json"), ".csv", wyniki)    # JSON -> CSV
 
-    # Lab 3: najpierw sprawdzamy, czy narzędzie zewnętrzne jest dostępne
+    # najpierw sprawdzamy, czy narzędzie zewnętrzne jest dostępne
     try:
         print(f"LibreOffice: {find_libreoffice()}")
     except ToolNotFoundError as e:
         print(f"Uwaga: {e}")
 
-    # Lab 4: bez overwrite=True istniejące pliki w "wyniki" nie zostaną nadpisane.
+    # bez overwrite=True istniejące pliki w "wyniki" nie zostaną nadpisane.
     # Interfejs graficzny jest w pliku gui.py.
     nadpisz = True
     convert(Path("dokument.docx"), ".pdf", wyniki, nadpisz)    # DOCX -> PDF

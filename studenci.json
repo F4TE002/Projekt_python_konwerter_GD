@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "imie": "Anna",
+    "nazwisko": "Kowalska",
+    "kierunek": "Informatyka",
+    "rok": "2",
+    "srednia": "4.5"
+  },
+  {
+    "id": "2",
+    "imie": "Piotr",
+    "nazwisko": "Nowak",
+    "kierunek": "Automatyka",
+    "rok": "3",
+    "srednia": "3.8"
+  },
+  {
+    "id": "3",
+    "imie": "Zofia",
+    "nazwisko": "Wiśniewska",
+    "kierunek": "Informatyka",
+    "rok": "1",
+    "srednia": "4.9"
+  },
+  {
+    "id": "4",
+    "imie": "Jakub",
+    "nazwisko": "Wójcik",
+    "kierunek": "Elektrotechnika",
+    "rok": "2",
+    "srednia": "3.2"
+  },
+  {
+    "id": "5",
+    "imie": "Łukasz",
+    "nazwisko": "Kamiński",
+    "kierunek": "Informatyka",
+    "rok": "3",
+    "srednia": "4.1"
+  }
+]
