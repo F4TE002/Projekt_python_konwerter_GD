@@ -5,6 +5,7 @@ import csv
 import json
 import shutil
 import subprocess
+import time
 
 Converter = Callable[[Path, Path], Path]
 REGISTRY: dict[tuple[str, str], Converter] = {}
@@ -23,6 +24,11 @@ class ConversionRequest:
     source: Path
     target_format: str
     output_dir: Path
+    overwrite: bool = False      # LAB 4: czy wolno nadpisać istniejący plik wynikowy
+
+    def target_path(self) -> Path:
+        """Ścieżka pliku, który powstanie, np. wyniki/dane.json."""
+        return self.output_dir / f"{self.source.stem}{self.target_format.lower()}"
 
 #walidacja
     def validate(self) -> None:
@@ -33,10 +39,17 @@ class ConversionRequest:
         key = (self.source.suffix.lower(), self.target_format.lower())
         if key not in REGISTRY:
             raise ValueError(f"Nieobsługiwana konwersja: {key}")
+        if self.target_path().exists() and not self.overwrite:
+            raise FileExistsError(f"Plik wynikowy już istnieje: {self.target_path()}")
 
 
 def available_targets(source: Path) -> list[str]:
     return sorted(target for (src, target) in REGISTRY if src == source.suffix.lower())
+
+
+def supported_sources() -> list[str]:
+    """Wszystkie rozszerzenia, z których umiemy konwertować, np. ['.csv', '.docx', ...]."""
+    return sorted({src for (src, target) in REGISTRY})
 
 
 # LAB 3: narzędzie zewnętrzne LibreOffice (DOCX, ODT, PDF)
@@ -213,13 +226,25 @@ def json_to_csv(source: Path, output_dir: Path) -> Path:
 def execute(request: ConversionRequest) -> Path:
     request.validate()
     key = (request.source.suffix.lower(), request.target_format.lower())
-    # TODO: polityka nadpisywania i rejestrowanie czasu operacji
-    return REGISTRY[key](request.source, request.output_dir)
+
+    # Polityka nadpisywania: validate() już odrzuciło istniejący plik bez zgody.
+    # Jeśli zgoda jest, usuwamy stary plik, żeby nie pomylić go z nowym wynikiem.
+    target = request.target_path()
+    if target.exists():
+        target.unlink()
+
+    # Rejestrowanie czasu operacji
+    start = time.perf_counter()
+    result = REGISTRY[key](request.source, request.output_dir)
+    elapsed = time.perf_counter() - start
+    print(f"[log] {request.source.name} -> {result.name}: {elapsed:.2f} s")
+    return result
 
 
-def convert(source: Path, target_format: str, output_dir: Path = Path(".")) -> None:
+def convert(source: Path, target_format: str, output_dir: Path = Path("."),
+            overwrite: bool = False) -> None:
     """Wykonuje jedną konwersję i wypisuje wynik albo błąd."""
-    request = ConversionRequest(source, target_format, output_dir)
+    request = ConversionRequest(source, target_format, output_dir, overwrite)
     try:
         wynik = execute(request)
         print(f"Gotowe: {wynik}")
@@ -228,6 +253,8 @@ def convert(source: Path, target_format: str, output_dir: Path = Path(".")) -> N
     except ValueError as e:
         print(f"Błąd: {e}")
         print(f"Dostępne formaty dla {source.name}: {available_targets(source)}")
+    except FileExistsError as e:
+        print(f"Pominięto: {e} (użyj overwrite=True, aby nadpisać)")
     except (FileNotFoundError, NotADirectoryError, RuntimeError) as e:
         print(f"Błąd: {e}")
 
@@ -248,10 +275,13 @@ if __name__ == "__main__":
     except ToolNotFoundError as e:
         print(f"Uwaga: {e}")
 
-    convert(Path("dokument.docx"), ".pdf", wyniki)    # DOCX -> PDF
-    convert(Path("dokument.docx"), ".odt", wyniki)    # DOCX -> ODT
-    convert(Path("notatka.odt"), ".pdf", wyniki)      # ODT  -> PDF
-    convert(Path("notatka.odt"), ".docx", wyniki)     # ODT  -> DOCX
-    convert(wyniki / "dokument.pdf", ".txt", wyniki)  # PDF  -> TXT
+    # Lab 4: bez overwrite=True istniejące pliki w "wyniki" nie zostaną nadpisane.
+    # Interfejs graficzny jest w pliku gui.py.
+    nadpisz = True
+    convert(Path("dokument.docx"), ".pdf", wyniki, nadpisz)    # DOCX -> PDF
+    convert(Path("dokument.docx"), ".odt", wyniki, nadpisz)    # DOCX -> ODT
+    convert(Path("notatka.odt"), ".pdf", wyniki, nadpisz)      # ODT  -> PDF
+    convert(Path("notatka.odt"), ".docx", wyniki, nadpisz)     # ODT  -> DOCX
+    convert(wyniki / "dokument.pdf", ".txt", wyniki, nadpisz)  # PDF  -> TXT
     
     # ---------------------------------------------------------------------------
