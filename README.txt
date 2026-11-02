@@ -112,7 +112,6 @@ Projekt_python_konwerter/
    docs/
       RAPORT_TESTOW.txt  - dane testowe, oczekiwane wyniki, raport testów
       ZRODLA.txt         - źródła, biblioteki, narzędzia AI
-   CHANGELOG.txt         - dziennik zmian
    README.txt            - ten plik
    requirements.txt      - zależności
    .gitignore            - pliki pomijane przez Git
@@ -220,3 +219,16 @@ AUTORZY
 - Ze względu na słabą znajomość języka Python, przy tworzeniu kodu
   i dokumentacji korzystano z narzędzia AI Claude (Anthropic).
   Zakres wsparcia opisano w pliku docs/ZRODLA.txt.
+
+HISTORIA PRACY (GIT)
+--------------------
+
+Pełna historia znajduje się w repozytorium Git. Najważniejsze commity:
+
+2026-10-13  Initial commit
+2026-10-13  python konwerter wrzucenie na gita   - Lab. 2: CSV <-> JSON
+2026-10-13  Create README.md
+2026-10-22  Rozszerzenie                         - Lab. 3: DOCX/ODT/PDF, LibreOffice, pypdf
+2026-10-28  GUI                                  - Lab. 4: okno programu (Tkinter)
+2026-10-28  GUI oraz lekkie poprawki             - Lab. 4: poprawki okna
+2026-11-02  Finalny pakiet do oddania zadania    - struktura katalogów, dokumentacja
