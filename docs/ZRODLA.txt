@@ -1,0 +1,72 @@
+ŹRÓDŁA, BIBLIOTEKI I NARZĘDZIA
+=============================
+
+
+BIBLIOTEKI PYTHONA
+------------------
+
+Biblioteka standardowa (nie wymaga instalacji):
+- csv          - odczyt i zapis plików CSV
+- json         - odczyt i zapis plików JSON
+- subprocess   - uruchamianie LibreOffice
+- shutil       - wyszukiwanie programu w PATH (shutil.which)
+- pathlib      - operacje na ścieżkach
+- dataclasses  - klasa ConversionRequest
+- time         - pomiar czasu konwersji
+- tkinter/ttk  - interfejs graficzny
+
+Biblioteka zewnętrzna (instalowana przez pip):
+- pypdf        - odczyt tekstu z plików PDF
+
+
+NARZĘDZIA
+---------
+
+- LibreOffice (tryb --headless) - konwersje DOCX, ODT i PDF
+- Visual Studio Code            - edytor kodu
+- Git / GitHub Desktop          - kontrola wersji
+
+
+ŹRÓDŁA I DOKUMENTACJA
+---------------------
+
+- Instrukcja projektowa przedmiotu Programowanie V - szkielet architektury
+  (rejestr konwerterów, dekorator converter, ConversionRequest, execute,
+  konwerter DOCX -> PDF) oraz wymagania kolejnych etapów.
+- Dokumentacja Pythona:
+  - csv:        https://docs.python.org/3/library/csv.html
+  - json:       https://docs.python.org/3/library/json.html
+  - subprocess: https://docs.python.org/3/library/subprocess.html
+  - pathlib:    https://docs.python.org/3/library/pathlib.html
+  - tkinter:    https://docs.python.org/3/library/tkinter.html
+- Parametry wiersza poleceń LibreOffice:
+  https://help.libreoffice.org/latest/en-US/text/shared/guide/start_parameters.html
+- Dokumentacja pypdf: https://pypdf.readthedocs.io/
+
+
+NARZĘDZIA AI
+------------
+
+Narzędzie: Claude (Anthropic).
+
+Powód użycia: słaba znajomość języka Python.
+
+Zakres wsparcia:
+- wspomaganie w napisaniu kodu kolejnych etapów na podstawie szkieletu z instrukcji:
+  konwertery CSV <-> JSON, integracja LibreOffice (DOCX/ODT/PDF),
+  konwersja PDF -> TXT, polityka nadpisywania, pomiar czasu oraz
+  interfejs graficzny gui.py,
+- wyjaśnianie działania kodu krok po kroku (dekoratory, klasy, wyjątki,
+  subprocess, Tkinter) oraz wskazanie miejsc do modyfikacji,
+- pomoc w rozwiązywaniu problemów przy uruchamianiu (ukryte rozszerzenia
+  plików w Windows, konfiguracja interpretera w VS Code),
+- przygotowanie oczekiwanych wyników, sprawdzenie konwersji i przygotowanie
+  dokumentacji (README, raport testów, dziennik zmian).
+
+Wkład autora:
+- wybór i przygotowanie danych testowych (studenci.csv, produkty.json,
+  trudny1.json, trudny2.csv),
+- uruchamianie i testowanie programu na własnym komputerze,
+- analiza kodu wraz z AI,
+- porządkowanie struktury projektu,
+- decyzje dotyczące zakresu kolejnych etapów.

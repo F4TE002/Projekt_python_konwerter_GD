@@ -1,0 +1,18 @@
+# Pliki generowane przez program
+testy/wyniki/
+wyniki/
+
+# Python
+__pycache__/
+*.pyc
+
+# Środowiska wirtualne
+.venv/
+venv/
+env/
+
+# Edytory i system
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

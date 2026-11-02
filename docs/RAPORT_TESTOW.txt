@@ -1,0 +1,166 @@
+RAPORT TESTÓW
+=============
+
+Wszystkie testy wykonano w oknie programu (python gui.py):
+plik wybierano przyciskiem "Wybierz plik...", format z listy
+"Format docelowy", a jako katalog docelowy ustawiano testy/wyniki.
+
+Wyniki porównano z plikami w testy/oczekiwane/, które zostały sprawdzone
+ręcznie z danymi wejściowymi.
+
+
+1. DANE TESTOWE I OCZEKIWANE WYNIKI
+-----------------------------------
+
+Pliki wejściowe: testy/dane testowe/
+Oczekiwane wyniki: testy/oczekiwane/
+
+
+1.1. studenci.csv -> JSON (przypadek typowy)
+
+Dane: prosta tabela - 5 wierszy, 6 kolumn, polskie znaki
+(Wiśniewska, Wójcik, Łukasz, Kamiński).
+
+Oczekiwany wynik (oczekiwane/studenci.json):
+- lista 5 obiektów, kluczami są nagłówki: id, imie, nazwisko, kierunek,
+  rok, srednia,
+- polskie znaki zapisane wprost (nie jako ł),
+- wszystkie wartości są tekstem, np. "srednia": "4.5".
+
+
+1.2. produkty.json -> CSV (przypadek typowy)
+
+Dane: 4 produkty z liczbami całkowitymi i dziesiętnymi, wartościami
+logicznymi i cudzysłowem w nazwie (Monitor 27").
+
+Oczekiwany wynik (oczekiwane/produkty.csv):
+- nagłówek id,nazwa,kategoria,cena,dostepny i 4 wiersze,
+- cudzysłów w nazwie poprawnie zabezpieczony: "Monitor 27""",
+- true/false zapisane jako True/False.
+
+
+1.3. trudny1.json -> CSV (przypadek trudny)
+
+Dane: rekordy o różnej strukturze - wartość null, brakujące pole
+komentarz, pole dodatkowe_pole występujące tylko w jednym rekordzie,
+przecinek w tekście, cudzysłów w nazwie (Zadanie "D"), liczba
+dziesiętna i polskie znaki.
+
+Oczekiwany wynik (oczekiwane/trudny1.csv):
+- kolumny id,nazwa,ocena,komentarz,dodatkowe_pole
+  (dodatkowa kolumna dołączona na końcu),
+- null i brakujące pola są puste,
+- tekst z przecinkiem ujęty w cudzysłów: "Bardzo dobrze, bez uwag",
+- cudzysłów podwojony: "Zadanie ""D""",
+- polskie znaki zachowane (żółć).
+
+
+1.4. trudny2.csv -> JSON (przypadek trudny)
+
+Dane: pola z przecinkiem, podwojonym cudzysłowem (""Wenecja Północy""),
+pole rozciągnięte na dwie linie, puste pola, polskie znaki.
+
+Oczekiwany wynik (oczekiwane/trudny2.json):
+- 4 obiekty (a nie 5, mimo że plik ma 5 linii danych - pole w dwóch
+  liniach to jeden rekord),
+- pole opis dla Krakowa ma wartość "Opis\nw dwóch liniach",
+- cudzysłowy odtworzone, puste pola zapisane jako "",
+- ponowna konwersja JSON -> CSV daje plik o tej samej treści co oryginał.
+
+
+1.5. dokument.docx i notatka.odt -> PDF, ODT, DOCX, TXT
+
+Dane: dokumenty z nagłówkiem, akapitem, tabelą i polskimi znakami.
+
+Oczekiwany wynik:
+- DOCX/ODT -> PDF: poprawny plik PDF z treścią i tabelą,
+- DOCX <-> ODT: poprawny dokument, który otwiera się w edytorze
+  z tą samą treścią,
+- PDF -> TXT (oczekiwane/dokument.txt): tekst dokumentu z zachowanymi
+  polskimi znakami (Zażółć gęślą jaźń); tabela spłaszczona do zwykłych
+  linii tekstu.
+
+
+2. TESTY KONWERSJI
+------------------
+
+Środowisko: Python 3.12, LibreOffice 24.2, pypdf 5.9
+
+Po każdej konwersji pojawiało się okno "Konwersja zakończona"
+ze ścieżką utworzonego pliku.
+
+Nr  Konwersja                     Wynik zgodny z oczekiwanym   Czas
+--  ----------------------------  ---------------------------  --------
+1   studenci.csv  -> JSON         TAK                          < 0,1 s
+2   produkty.json -> CSV          TAK                          < 0,1 s
+3   trudny1.json  -> CSV          TAK                          < 0,1 s
+4   trudny2.csv   -> JSON         TAK                          < 0,1 s
+5   trudny2.json  -> CSV          TAK (treść jak w oryginale)  < 0,1 s
+6   dokument.docx -> PDF          TAK                          ok. 2-2,5 s
+7   dokument.docx -> ODT          TAK                          ok. 2-2,5 s
+8   notatka.odt   -> PDF          TAK                          ok. 2 s
+9   notatka.odt   -> DOCX         TAK                          ok. 2 s
+10  dokument.pdf  -> TXT          TAK                          ok. 0,2 s
+
+Czasy dokumentów obejmują uruchomienie LibreOffice w tle.
+
+
+3. TESTY OKNA PROGRAMU
+----------------------
+
+Nr  Scenariusz                         Oczekiwane zachowanie                     Wynik
+--  ---------------------------------  ----------------------------------------  -----
+1   wybór dokument.docx                lista formatów: .odt, .pdf;               OK
+                                       przycisk "Konwertuj" aktywny
+2   wybór studenci.csv                 lista formatów: tylko .json               OK
+3   wybór pliku .xyz                   lista formatów wyłączona, przycisk        OK
+                                       nieaktywny, informacja o obsługiwanych
+                                       formatach
+4   próba niedozwolonej pary           przycisk "Konwertuj" nieaktywny;          OK
+    (CSV -> PDF)                       przy wywołaniu - okno
+                                       "Niedozwolona konwersja"
+5   plik wynikowy istnieje,            okno "Plik już istnieje";                 OK
+    odpowiedź "Nie"                    plik bez zmian, komunikat "Anulowano"
+6   plik wynikowy istnieje,            plik zastąpiony nowym,                    OK
+    odpowiedź "Tak"                    okno "Konwersja zakończona"
+7   konwersja dokumentu                kursor zmienia się w klepsydrę,           OK
+                                       przycisk zablokowany do końca konwersji
+
+
+4. TESTY OBSŁUGI BŁĘDÓW
+-----------------------
+
+Nr  Sytuacja                           Okno z komunikatem                        Wynik
+--  ---------------------------------  ----------------------------------------  -----
+1   uszkodzony plik JSON               "Nieprawidłowe dane":                     OK
+                                       "Niepoprawny JSON: ..."
+2   JSON nie jest listą obiektów       "Nieprawidłowe dane":                     OK
+    (np. [1, 2, 3])                    "JSON musi być listą obiektów"
+3   pusty plik CSV                     "Nieprawidłowe dane":                     OK
+                                       "Plik CSV jest pusty"
+4   plik usunięty po wybraniu          "Brak pliku": prośba o ponowny wybór      OK
+5   katalog usunięty po wybraniu       "Brak katalogu": prośba o wybór           OK
+                                       innego katalogu
+6   brak LibreOffice                   "Brak narzędzia": link do pobrania;       OK
+                                       konwersje CSV/JSON działają dalej
+7   LibreOffice zwraca kod błędu       "Konwersja nie powiodła się"              OK
+                                       z kodem zakończenia i opisem błędu
+
+Dodatkowo sprawdzono w kodzie, że LibreOffice jest wywoływany przez
+subprocess.run z listą argumentów, bez shell=True.
+
+
+5. WYKRYTE OGRANICZENIA
+-----------------------
+
+Testy potwierdziły ograniczenia opisane w README.txt:
+- plik CSV zapisany w kodowaniu Windows-1250 (np. przez starszy Excel)
+  kończy się błędem dekodowania ('utf-8' codec can't decode...),
+- plik CSV ze średnikami jest traktowany jako jedna kolumna,
+- wartości logiczne JSON trafiają do CSV jako True/False,
+- wszystkie wartości z CSV trafiają do JSON jako tekst,
+- podczas konwersji dokumentu okno nie reaguje przez 1-2 s.
+
+Możliwe usprawnienia: wybór separatora i kodowania w oknie programu,
+rozpoznawanie typów liczbowych, konwersja w osobnym wątku
+(okno bez "zamrażania").

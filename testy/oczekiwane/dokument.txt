@@ -1,0 +1,4 @@
+Dokument testowy – Lab 3
+Konwerter plików: DOCX → PDF, ODT. Zażółć gęślą jaźń.
+Format Narzędzie
+DOCX/ODT/PDF LibreOffice

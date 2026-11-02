@@ -256,13 +256,24 @@ def convert(source: Path, target_format: str, output_dir: Path = Path("."),
 
 if __name__ == "__main__":
     # Tu wpisujesz, co chcesz przekonwertować.
-    # Wyniki trafiają do folderu "wyniki", żeby nie nadpisać plików źródłowych.
-    wyniki = Path("wyniki")
+    # Ścieżki liczone od położenia tego pliku -> działa niezależnie od tego,
+    # z którego folderu uruchomisz program.
+    PROJEKT = Path(__file__).resolve().parent          # folder projektu
+    DANE = PROJEKT / "testy" / "dane testowe"          # pliki wejściowe
+
+    # Wyniki trafiają do folderu "testy/wyniki", żeby nie nadpisać plików źródłowych.
+    wyniki = PROJEKT / "testy" / "wyniki"
     wyniki.mkdir(exist_ok=True)           # tworzy folder, jeśli go nie ma
 
-    #
-    # convert(Path("trudny2.csv"), ".json", wyniki)    # CSV  -> JSON
-    # convert(Path("trudny1.json"), ".csv", wyniki)    # JSON -> CSV
+    # bez overwrite=True istniejące pliki w "wyniki" nie zostaną nadpisane.
+    # Interfejs graficzny jest w pliku gui.py.
+    nadpisz = True
+
+    # CSV <-> JSON
+    convert(DANE / "studenci.csv", ".json", wyniki, nadpisz)    # CSV  -> JSON
+    convert(DANE / "produkty.json", ".csv", wyniki, nadpisz)    # JSON -> CSV
+    convert(DANE / "trudny1.json", ".csv", wyniki, nadpisz)     # JSON -> CSV
+    convert(DANE / "trudny2.csv", ".json", wyniki, nadpisz)     # CSV  -> JSON
 
     # najpierw sprawdzamy, czy narzędzie zewnętrzne jest dostępne
     try:
@@ -270,13 +281,11 @@ if __name__ == "__main__":
     except ToolNotFoundError as e:
         print(f"Uwaga: {e}")
 
-    # bez overwrite=True istniejące pliki w "wyniki" nie zostaną nadpisane.
-    # Interfejs graficzny jest w pliku gui.py.
-    nadpisz = True
-    convert(Path("dokument.docx"), ".pdf", wyniki, nadpisz)    # DOCX -> PDF
-    convert(Path("dokument.docx"), ".odt", wyniki, nadpisz)    # DOCX -> ODT
-    convert(Path("notatka.odt"), ".pdf", wyniki, nadpisz)      # ODT  -> PDF
-    convert(Path("notatka.odt"), ".docx", wyniki, nadpisz)     # ODT  -> DOCX
-    convert(wyniki / "dokument.pdf", ".txt", wyniki, nadpisz)  # PDF  -> TXT
-    
+    # DOCX / ODT / PDF
+    convert(DANE / "dokument.docx", ".pdf", wyniki, nadpisz)    # DOCX -> PDF
+    convert(DANE / "dokument.docx", ".odt", wyniki, nadpisz)    # DOCX -> ODT
+    convert(DANE / "notatka.odt", ".pdf", wyniki, nadpisz)      # ODT  -> PDF
+    convert(DANE / "notatka.odt", ".docx", wyniki, nadpisz)     # ODT  -> DOCX
+    convert(wyniki / "dokument.pdf", ".txt", wyniki, nadpisz)   # PDF  -> TXT
+
     # ---------------------------------------------------------------------------

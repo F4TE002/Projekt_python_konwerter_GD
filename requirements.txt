@@ -1,0 +1,6 @@
+# Zależności Pythona (biblioteka standardowa nie wymaga instalacji)
+# Instalacja: python -m pip install -r requirements.txt
+pypdf>=5.0
+
+# Narzędzie zewnętrzne (nie instaluje się przez pip):
+# LibreOffice 7.x lub nowszy - https://www.libreoffice.org/download/
