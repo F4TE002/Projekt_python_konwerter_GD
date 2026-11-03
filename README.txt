@@ -1,12 +1,9 @@
 KONWERTER PLIKÓW
 ================
 
-Projekt zaliczeniowy z przedmiotu Programowanie V, Politechnika Opolska.
+Projekt zaliczeniowy z przedmiotu Programowanie V.
 
 Autor: Grzegorz Dyląg
-Kod tworzony ze wsparciem narzędzia AI - szczegóły w sekcji AUTORZY
-oraz w pliku docs/ZRODLA.txt.
-
 
 CEL PROJEKTU
 ------------
@@ -21,8 +18,7 @@ zarejestrowane konwersje.
 OBSŁUGIWANE FUNKCJE
 -------------------
 
-- 7 kierunków konwersji między formatami CSV, JSON, DOCX, ODT, PDF i TXT
-  (patrz: TABELA WSPIERANYCH PAR FORMATÓW).
+- 7 kierunków konwersji między formatami CSV, JSON, DOCX, ODT, PDF i TXT.
 - Okno programu (Tkinter/ttk):
   - wybór pliku wejściowego i katalogu docelowego,
   - lista formatów docelowych zależna od rozszerzenia pliku,
@@ -163,7 +159,6 @@ Projekt_python_konwerter/
    docs/
       RAPORT_TESTOW.txt  - dane testowe, oczekiwane wyniki, raport testów
       ZRODLA.txt         - źródła, biblioteki, narzędzia AI
-   CHANGELOG.txt         - dziennik zmian
    README.txt            - ten plik
    requirements.txt      - zależności
    .gitignore            - pliki pomijane przez Git
@@ -287,6 +282,33 @@ ROZWIĄZYWANIE PROBLEMÓW
 - VS Code podkreśla import pypdf:
   Ctrl+Shift+P -> Python: Select Interpreter i wybierz ten sam Python,
   w którym instalowano pakiet.
+
+
+HISTORIA PRACY (GIT)
+--------------------
+
+Pełna historia zmian znajduje się w repozytorium Git. Kolejne commity
+odpowiadają etapom projektu:
+
+Data        Commit                                Etap / zakres zmian
+----------  ------------------------------------  ----------------------------------
+2026-10-13  Initial commit                        utworzenie repozytorium
+2026-10-13  python konwerter wrzucenie na gita    Lab. 2: szkielet z instrukcji,
+                                                  konwersje CSV <-> JSON, dane testowe
+2026-10-13  Create README.md                      pierwsza wersja README
+2026-10-22  Rozszerzenie                          Lab. 3: DOCX/ODT/PDF przez
+                                                  LibreOffice, PDF -> TXT (pypdf),
+                                                  wykrywanie braku narzędzia
+2026-10-28  GUI                                   Lab. 4: okno programu (Tkinter/ttk)
+2026-10-28  GUI oraz lekkie poprawki              Lab. 4: pytanie o nadpisanie,
+                                                  pomiar czasu, poprawki okna
+2026-11-02  Finalny pakiet do oddania zadania     struktura katalogów, dane
+                                                  i wyniki oczekiwane, dokumentacja
+2026-11-02  Update README.txt                     poprawki README
+2026-11-03  Finalne dopięcie projektu             wspólny model błędów, konwersja
+                                                  w osobnym wątku, LibreOffice
+                                                  na Windows/macOS/Linux, testy
+                                                  automatyczne (42 testy)
 
 
 AUTORZY

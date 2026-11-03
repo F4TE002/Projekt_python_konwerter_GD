@@ -59,23 +59,14 @@ Narzędzie: Claude (Anthropic), używany przez aplikację Claude.
 Powód użycia: słaba znajomość języka Python.
 
 Zakres wsparcia:
-- napisanie kodu kolejnych etapów na podstawie szkieletu z instrukcji:
+- pomoc w napisaniu kodu dla kolejnych etapów na podstawie szkieletu z instrukcji:
   konwertery CSV <-> JSON, integracja LibreOffice (DOCX/ODT/PDF),
   konwersja PDF -> TXT, polityka nadpisywania, pomiar czasu,
   interfejs graficzny gui.py, wspólny model błędów, wykrywanie
   LibreOffice na różnych systemach i konwersja w osobnym wątku,
 - wyjaśnianie działania kodu krok po kroku (dekoratory, klasy, wyjątki,
-  subprocess, Tkinter) oraz wskazanie miejsc do modyfikacji,
-- pomoc w rozwiązywaniu problemów przy uruchamianiu (ukryte rozszerzenia
-  plików w Windows, konfiguracja interpretera w VS Code),
-- przygotowanie oczekiwanych wyników, testów automatycznych, sprawdzenie
-  konwersji i przygotowanie dokumentacji (README, raport testów,
+  subprocess, Tkinter) oraz wskazanie miejsc do ewentualnej modyfikacji,
+- pomoc w przygotowaniu oczekiwanych wyników, testów automatycznych, sprawdzeniu
+  konwersji i przygotowaniu dokumentacji (README, raport testów,
   dziennik zmian).
 
-Wkład autora:
-- wybór i przygotowanie danych testowych (studenci.csv, produkty.json,
-  trudny1.json, trudny2.csv),
-- uruchamianie i testowanie programu na własnym komputerze,
-- analiza kodu wraz z AI,
-- porządkowanie struktury projektu,
-- decyzje dotyczące zakresu kolejnych etapów.
