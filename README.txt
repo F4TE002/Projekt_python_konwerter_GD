@@ -18,7 +18,8 @@ zarejestrowane konwersje.
 OBSŁUGIWANE FUNKCJE
 -------------------
 
-- 7 kierunków konwersji między formatami CSV, JSON, DOCX, ODT, PDF i TXT.
+- 10 kierunków konwersji między formatami CSV, JSON, DOCX, ODT, PDF i TXT
+  (patrz: TABELA WSPIERANYCH PAR FORMATÓW).
 - Okno programu (Tkinter/ttk):
   - wybór pliku wejściowego i katalogu docelowego,
   - lista formatów docelowych zależna od rozszerzenia pliku,
@@ -34,7 +35,7 @@ OBSŁUGIWANE FUNKCJE
 - Wykrywanie LibreOffice na Windows, macOS i Linux; brak LibreOffice
   lub biblioteki pypdf jest wykrywany i opisany.
 - Rejestrowanie czasu każdej konwersji (terminal i okno programu).
-- Testy automatyczne (unittest) - 42 testy.
+- Testy automatyczne (unittest) - 48 testów.
 
 
 WYMAGANIA
@@ -46,7 +47,7 @@ WYMAGANIA
   (na Linuksie np.: sudo apt install python3-tk)
 - pypdf 5.0 lub nowszy - potrzebny do konwersji PDF -> TXT
   (zapisany w requirements.txt)
-- LibreOffice 7.x lub nowszy - potrzebny do konwersji DOCX / ODT / PDF
+- LibreOffice 7.x lub nowszy - potrzebny do konwersji DOCX / ODT / PDF / TXT
   https://www.libreoffice.org/download/
 
 Brak LibreOffice lub pypdf nie blokuje programu - pozostałe konwersje
@@ -238,6 +239,15 @@ ODT -> DOCX
    Ograniczenia: elementy specyficzne dla LibreOffice mogą wyglądać
    inaczej w Wordzie.
 
+TXT -> PDF, TXT -> DOCX, TXT -> ODT
+   Realizacja: LibreOffice (kodowanie wymuszone na UTF-8)
+   Ograniczenia:
+   - wymaga zainstalowanego LibreOffice,
+   - plik musi być zapisany w UTF-8 (plik w Windows-1250 jest odrzucany
+     z komunikatem i wskazówką, jak zapisać go w UTF-8),
+   - powstaje dokument bez formatowania - każda linia pliku to osobny
+     akapit, czcionka domyślna LibreOffice; brak nagłówków, list, tabel.
+
 PDF -> TXT
    Realizacja: biblioteka pypdf
    Ograniczenia:
@@ -319,4 +329,3 @@ AUTORZY
   konwerter DOCX -> PDF) pochodzi z instrukcji projektowej przedmiotu.
 - Ze względu na słabą znajomość języka Python, przy tworzeniu kodu,
   testów i dokumentacji korzystano z narzędzia AI Claude (Anthropic).
-  Zakres wsparcia opisano w pliku docs/ZRODLA.txt.

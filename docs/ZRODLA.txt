@@ -26,7 +26,7 @@ Biblioteka zewnętrzna (instalowana przez pip):
 NARZĘDZIA
 ---------
 
-- LibreOffice (tryb --headless) - konwersje DOCX, ODT i PDF
+- LibreOffice (tryb --headless) - konwersje DOCX, ODT, PDF i TXT
 - Visual Studio Code            - edytor kodu
 - Git / GitHub Desktop          - kontrola wersji
 
@@ -59,14 +59,14 @@ Narzędzie: Claude (Anthropic), używany przez aplikację Claude.
 Powód użycia: słaba znajomość języka Python.
 
 Zakres wsparcia:
-- pomoc w napisaniu kodu dla kolejnych etapów na podstawie szkieletu z instrukcji:
+- pomoc w napisaniu kodu kolejnych etapów na podstawie szkieletu z instrukcji:
   konwertery CSV <-> JSON, integracja LibreOffice (DOCX/ODT/PDF),
-  konwersja PDF -> TXT, polityka nadpisywania, pomiar czasu,
+  konwersje PDF -> TXT i TXT -> PDF/DOCX/ODT, polityka nadpisywania, pomiar czasu,
   interfejs graficzny gui.py, wspólny model błędów, wykrywanie
   LibreOffice na różnych systemach i konwersja w osobnym wątku,
 - wyjaśnianie działania kodu krok po kroku (dekoratory, klasy, wyjątki,
-  subprocess, Tkinter) oraz wskazanie miejsc do ewentualnej modyfikacji,
-- pomoc w przygotowaniu oczekiwanych wyników, testów automatycznych, sprawdzeniu
-  konwersji i przygotowaniu dokumentacji (README, raport testów,
+  subprocess, Tkinter) oraz wskazanie miejsc do modyfikacji,
+- pomoc w przygotowaniu oczekiwanych wyników, testów automatycznych, sprawdzenie
+  konwersji i przygotowanie dokumentacji (README, raport testów,
   dziennik zmian).
 

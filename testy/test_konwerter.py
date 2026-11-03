@@ -14,6 +14,7 @@ import tempfile
 import time
 import unittest
 from unittest import mock
+import zipfile
 
 PROJEKT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJEKT))
@@ -116,6 +117,9 @@ class TestAvailableTargets(TestBase):
     def test_odt(self):
         self.assertEqual(k.available_targets(Path("a.odt")), [".docx", ".pdf"])
 
+    def test_txt(self):
+        self.assertEqual(k.available_targets(Path("a.txt")), [".docx", ".odt", ".pdf"])
+
     def test_csv_json_pdf(self):
         self.assertEqual(k.available_targets(Path("a.csv")), [".json"])
         self.assertEqual(k.available_targets(Path("a.json")), [".csv"])
@@ -131,7 +135,7 @@ class TestAvailableTargets(TestBase):
     def test_zgodnosc_z_rejestrem(self):
         for (src, target) in k.REGISTRY:
             self.assertIn(target, k.available_targets(Path(f"plik{src}")))
-        self.assertEqual(len(k.REGISTRY), 7)
+        self.assertEqual(len(k.REGISTRY), 10)
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +214,13 @@ class TestModelBledow(TestBase):
             self.run_conv(plik, ".json")
         self.assertIn("UTF-8", ctx.exception.user_message())
 
+    def test_txt_w_kodowaniu_windows_1250(self):
+        # sprawdzane przed uruchomieniem LibreOffice, więc nie wymaga narzędzia
+        plik = self.plik("ansi.txt", "Zażółć gęślą jaźń".encode("cp1250"))
+        with self.assertRaises(k.InvalidInputError) as ctx:
+            self.run_conv(plik, ".pdf")
+        self.assertIn("UTF-8", ctx.exception.user_message())
+
     @unittest.skipUnless(pypdf_dostepny(), "brak pypdf")
     def test_uszkodzony_pdf(self):
         plik = self.plik("zly.pdf", "to nie jest PDF")
@@ -280,6 +291,16 @@ class TestWykrywanieLibreOffice(TestBase):
         self.assertIsInstance(args[0], list)
         self.assertNotIn("shell", kwargs)
 
+    def test_txt_wymusza_kodowanie_utf8(self):
+        wynik = mock.Mock(returncode=0, stderr="")
+        with mock.patch("konwerter.find_libreoffice", return_value="soffice"), \
+             mock.patch("konwerter.subprocess.run", return_value=wynik) as run:
+            (self.out / "tekst.pdf").write_bytes(b"%PDF")      # udajemy wynik
+            k.txt_to_pdf(DANE / "tekst.txt", self.out)
+        polecenie = run.call_args[0][0]
+        self.assertIn(f"--infilter={k.TXT_INFILTER}", polecenie)
+        self.assertIn("UTF8", k.TXT_INFILTER)
+
     def test_niezerowy_kod_zakonczenia_to_blad(self):
         wynik = mock.Mock(returncode=1, stderr="symulowany błąd")
         with mock.patch("konwerter.find_libreoffice", return_value="soffice"), \
@@ -305,6 +326,21 @@ class TestDokumenty(TestBase):
 
     def test_odt_do_docx(self):
         self.assertTrue(self.run_conv(DANE / "notatka.odt", ".docx").read_bytes().startswith(b"PK"))
+
+    def test_txt_do_docx_zachowuje_polskie_znaki(self):
+        wynik = self.run_conv(DANE / "tekst.txt", ".docx")
+        with zipfile.ZipFile(wynik) as z:                 # DOCX to archiwum ZIP z XML
+            tresc = z.read("word/document.xml").decode("utf-8")
+        self.assertIn("Zażółć gęślą jaźń", tresc)
+
+    def test_txt_do_odt_zachowuje_polskie_znaki(self):
+        wynik = self.run_conv(DANE / "tekst.txt", ".odt")
+        with zipfile.ZipFile(wynik) as z:                 # ODT to archiwum ZIP z XML
+            tresc = z.read("content.xml").decode("utf-8")
+        self.assertIn("Zażółć gęślą jaźń", tresc)
+
+    def test_txt_do_pdf(self):
+        self.assertTrue(self.run_conv(DANE / "tekst.txt", ".pdf").read_bytes().startswith(b"%PDF"))
 
     @unittest.skipUnless(pypdf_dostepny(), "brak pypdf")
     def test_pdf_do_txt(self):

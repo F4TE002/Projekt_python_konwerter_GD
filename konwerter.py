@@ -168,22 +168,26 @@ def find_libreoffice() -> str:
         if path.is_file():
             return str(path)
     raise ToolNotFoundError("Nie znaleziono LibreOffice, który jest potrzebny "
-                            "do konwersji dokumentów DOCX, ODT i PDF.", install_hint())
+                            "do konwersji dokumentów DOCX, ODT, PDF i TXT.", install_hint())
 
 
 LIBREOFFICE_TIMEOUT = 60      # sekundy
 
 
-def run_libreoffice(source: Path, output_dir: Path, target_ext: str, lo_format: str) -> Path:
-    """Wywołuje LibreOffice w trybie bez okna i zwraca ścieżkę do pliku wynikowego."""
+def run_libreoffice(source: Path, output_dir: Path, target_ext: str, lo_format: str,
+                    infilter: str | None = None) -> Path:
+    """Wywołuje LibreOffice w trybie bez okna i zwraca ścieżkę do pliku wynikowego.
+
+    infilter - opcjonalny filtr wejściowy, np. wymuszenie kodowania pliku TXT.
+    """
     soffice = find_libreoffice()
 
     # Polecenie jako LISTA argumentów -> bez shell=True (bezpieczniej:
     # nazwa pliku nie jest interpretowana przez powłokę systemową)
-    command = [
-        soffice, "--headless", "--convert-to", lo_format,
-        "--outdir", str(output_dir), str(source)
-    ]
+    command = [soffice, "--headless"]
+    if infilter:
+        command.append(f"--infilter={infilter}")
+    command += ["--convert-to", lo_format, "--outdir", str(output_dir), str(source)]
     try:
         result = subprocess.run(command, capture_output=True, text=True,
                                 timeout=LIBREOFFICE_TIMEOUT)
@@ -208,6 +212,43 @@ def run_libreoffice(source: Path, output_dir: Path, target_ext: str, lo_format: 
             "Zamknij otwarte okna LibreOffice i spróbuj ponownie.")
     return target
 
+
+# TXT -> PDF / DOCX / ODT (LibreOffice)
+# ---------------------------------------------------------------------------
+
+# Wymuszamy odczyt pliku TXT jako UTF-8; bez tego LibreOffice na Windowsie
+# mógłby przyjąć kodowanie systemowe (Windows-1250) i zniekształcić polskie znaki.
+TXT_INFILTER = "Text (encoded):UTF8,LF,,,"
+
+
+def txt_via_libreoffice(source: Path, output_dir: Path, target_ext: str, lo_format: str) -> Path:
+    """Sprawdza kodowanie pliku TXT i konwertuje go przez LibreOffice."""
+    try:
+        source.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError as e:
+        raise InvalidInputError(
+            "Plik TXT nie jest zapisany w kodowaniu UTF-8.",
+            "Zapisz plik w UTF-8 (Notatnik: Plik -> Zapisz jako -> Kodowanie: UTF-8).") from e
+    return run_libreoffice(source, output_dir, target_ext, lo_format, infilter=TXT_INFILTER)
+
+
+@converter(".txt", ".pdf")
+def txt_to_pdf(source: Path, output_dir: Path) -> Path:
+    return txt_via_libreoffice(source, output_dir, ".pdf", "pdf")
+
+
+@converter(".txt", ".docx")
+def txt_to_docx(source: Path, output_dir: Path) -> Path:
+    return txt_via_libreoffice(source, output_dir, ".docx", "docx:MS Word 2007 XML")
+
+
+@converter(".txt", ".odt")
+def txt_to_odt(source: Path, output_dir: Path) -> Path:
+    return txt_via_libreoffice(source, output_dir, ".odt", "odt")
+
+
+# DOCX / ODT (LibreOffice)
+# ---------------------------------------------------------------------------
 
 @converter(".docx", ".pdf")
 def docx_to_pdf(source: Path, output_dir: Path) -> Path:
@@ -402,5 +443,8 @@ if __name__ == "__main__":
     convert(DANE / "notatka.odt", ".pdf", wyniki, nadpisz)      # ODT  -> PDF
     convert(DANE / "notatka.odt", ".docx", wyniki, nadpisz)     # ODT  -> DOCX
     convert(wyniki / "dokument.pdf", ".txt", wyniki, nadpisz)   # PDF  -> TXT
+    convert(DANE / "tekst.txt", ".pdf", wyniki, nadpisz)        # TXT  -> PDF
+    convert(DANE / "tekst.txt", ".docx", wyniki, nadpisz)       # TXT  -> DOCX
+    convert(DANE / "tekst.txt", ".odt", wyniki, nadpisz)        # TXT  -> ODT
 
     # ---------------------------------------------------------------------------

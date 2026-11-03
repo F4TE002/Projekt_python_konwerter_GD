@@ -88,6 +88,17 @@ Oczekiwany wynik:
   zniekształcone (patrz punkt 5).
 
 
+1.6. tekst.txt -> PDF, DOCX, ODT
+
+Dane: zwykły plik tekstowy w UTF-8 - tytuł, pusta linia, polskie znaki
+(Zażółć gęślą jaźń. ĄĘÓŁŚŻŹĆŃ), przecinek, cudzysłów i liczba.
+
+Oczekiwany wynik:
+- TXT -> PDF: poprawny plik PDF z treścią pliku,
+- TXT -> DOCX / ODT: dokument z każdą linią jako osobnym akapitem,
+  polskie znaki zachowane (sprawdzone w treści XML dokumentu).
+
+
 2. TESTY KONWERSJI W OKNIE PROGRAMU
 -----------------------------------
 
@@ -106,6 +117,9 @@ Nr  Konwersja                     Wynik zgodny z oczekiwanym   Czas
 8   notatka.odt   -> PDF          TAK                          ok. 1,5-2 s
 9   notatka.odt   -> DOCX         TAK                          ok. 1,5-2 s
 10  dokument.pdf  -> TXT          TAK                          ok. 0,2 s
+11  tekst.txt     -> PDF          TAK                          ok. 1-3 s
+12  tekst.txt     -> DOCX         TAK (polskie znaki OK)       ok. 1-3 s
+13  tekst.txt     -> ODT          TAK (polskie znaki OK)       ok. 1-3 s
 
 Czasy dokumentów obejmują uruchomienie LibreOffice w tle.
 
@@ -118,6 +132,7 @@ Nr  Scenariusz                         Oczekiwane zachowanie                    
 1   wybór dokument.docx                lista formatów: .odt, .pdf;               OK
                                        przycisk "Konwertuj" aktywny
 2   wybór studenci.csv                 lista formatów: tylko .json               OK
+2a  wybór tekst.txt                    lista formatów: .docx, .odt, .pdf         OK
 3   wybór pliku .xyz                   lista formatów wyłączona, przycisk        OK
                                        nieaktywny, informacja o obsługiwanych
                                        formatach
@@ -158,6 +173,9 @@ Nr  Sytuacja                           Okno z komunikatem                       
 4   CSV w kodowaniu Windows-1250       "Nieprawidłowe dane": "Plik CSV nie       OK
                                        jest zapisany w kodowaniu UTF-8"
                                        + wskazówka (Excel: CSV UTF-8)
+4a  TXT w kodowaniu Windows-1250       "Nieprawidłowe dane": "Plik TXT nie       OK
+                                       jest zapisany w kodowaniu UTF-8"
+                                       + wskazówka (Notatnik: Kodowanie UTF-8)
 5   uszkodzony plik PDF                "Nieprawidłowe dane": "Plik PDF jest      OK
                                        uszkodzony lub nieprawidłowy"
 6   plik usunięty po wybraniu          "Brak pliku" + prośba o ponowny wybór     OK
@@ -193,6 +211,11 @@ LibreOffice.
 Wynik na Windowsie po poprawce testu: 42 testy, 42 zaliczone, 0 błędów
 (czas ok. 22 s).
 
+Po dodaniu konwersji TXT -> PDF/DOCX/ODT liczba testów wzrosła do 48.
+Wynik na Linuksie: 48 testów, 48 zaliczonych, 0 błędów (czas ok. 12 s).
+Wynik na Windowsie: 48 testów, 48 zaliczonych, 0 błędów (czas ok. 27 s);
+polskie znaki w konwersjach TXT -> DOCX i TXT -> ODT zachowane.
+
 Bez ekranu lub Tkintera 2 testy GUI są pomijane (skipped);
 bez LibreOffice pomijane są testy konwersji dokumentów.
 
@@ -202,26 +225,29 @@ TestValidate                  8       validate(): poprawne zadanie, wielkość l
                                       rozszerzeń, brak pliku, brak katalogu,
                                       niedozwolona para, plik istnieje bez zgody
                                       i za zgodą, target_path()
-TestAvailableTargets          6       available_targets(): formaty dla .docx, .odt,
-                                      .csv, .json, .pdf; wielkość liter; plik
-                                      nieobsługiwany i bez rozszerzenia; zgodność
-                                      z rejestrem (7 kierunków)
+TestAvailableTargets          7       available_targets(): formaty dla .docx, .odt,
+                                      .txt, .csv, .json, .pdf; wielkość liter;
+                                      plik nieobsługiwany i bez rozszerzenia;
+                                      zgodność z rejestrem (10 kierunków)
 TestCsvJson                   5       konwertery csv_to_json i json_to_csv na danych
                                       testowych (studenci, produkty, trudny1,
                                       trudny2) oraz konwersja w obie strony
                                       bez utraty danych
-TestModelBledow               7       wszystkie błędy dziedziczą po ConversionError
+TestModelBledow               8       wszystkie błędy dziedziczą po ConversionError
                                       i mają tytuł; komunikat ze wskazówką; błędny
-                                      JSON, JSON nie-lista, pusty CSV, CSV
+                                      JSON, JSON nie-lista, pusty CSV, CSV i TXT
                                       w Windows-1250, uszkodzony PDF
 TestNadpisywanie              2       brak nadpisania bez zgody, nadpisanie za zgodą
-TestWykrywanieLibreOffice     7       ścieżki dla Windows, macOS i Linux; zmienna
+TestWykrywanieLibreOffice     8       ścieżki dla Windows, macOS i Linux; zmienna
                                       LIBREOFFICE_PATH; brak narzędzia wykryty
                                       i opisany; wywołanie listą bez shell=True;
-                                      niezerowy kod zakończenia to błąd
-TestDokumenty                 5       konwertery DOCX -> PDF, ODT -> PDF,
+                                      wymuszenie UTF-8 dla TXT; niezerowy kod
+                                      zakończenia to błąd
+TestDokumenty                 8       konwertery DOCX -> PDF, ODT -> PDF,
                                       DOCX -> ODT, ODT -> DOCX, PDF -> TXT
-                                      (PDF -> TXT sprawdza słowa kluczowe)
+                                      (sprawdza słowa kluczowe), TXT -> PDF,
+                                      TXT -> DOCX i TXT -> ODT (polskie znaki
+                                      w treści dokumentu)
 TestGuiBezZamrazania          2       okno reaguje podczas 1-sekundowej konwersji
                                       (kliknięcie wraca w < 0,2 s, okno odświeża
                                       się w trakcie); błąd z wątku roboczego

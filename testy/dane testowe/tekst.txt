@@ -1,0 +1,4 @@
+Notatka tekstowa – test konwersji TXT
+
+Zażółć gęślą jaźń. ĄĘÓŁŚŻŹĆŃ
+Druga linia: przecinek, "cudzysłów" i liczba 3,14.
