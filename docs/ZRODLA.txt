@@ -10,10 +10,14 @@ Biblioteka standardowa (nie wymaga instalacji):
 - json         - odczyt i zapis plików JSON
 - subprocess   - uruchamianie LibreOffice
 - shutil       - wyszukiwanie programu w PATH (shutil.which)
+- os, sys      - zmienne środowiskowe i rozpoznanie systemu operacyjnego
 - pathlib      - operacje na ścieżkach
 - dataclasses  - klasa ConversionRequest
 - time         - pomiar czasu konwersji
 - tkinter/ttk  - interfejs graficzny
+- threading    - konwersja w osobnym wątku (okno nie zamarza)
+- queue        - przekazanie wyniku z wątku roboczego do okna
+- unittest, unittest.mock, tempfile - testy automatyczne
 
 Biblioteka zewnętrzna (instalowana przez pip):
 - pypdf        - odczyt tekstu z plików PDF
@@ -39,6 +43,9 @@ NARZĘDZIA
   - subprocess: https://docs.python.org/3/library/subprocess.html
   - pathlib:    https://docs.python.org/3/library/pathlib.html
   - tkinter:    https://docs.python.org/3/library/tkinter.html
+  - threading:  https://docs.python.org/3/library/threading.html
+  - queue:      https://docs.python.org/3/library/queue.html
+  - unittest:   https://docs.python.org/3/library/unittest.html
 - Parametry wiersza poleceń LibreOffice:
   https://help.libreoffice.org/latest/en-US/text/shared/guide/start_parameters.html
 - Dokumentacja pypdf: https://pypdf.readthedocs.io/
@@ -47,21 +54,23 @@ NARZĘDZIA
 NARZĘDZIA AI
 ------------
 
-Narzędzie: Claude (Anthropic).
+Narzędzie: Claude (Anthropic), używany przez aplikację Claude.
 
 Powód użycia: słaba znajomość języka Python.
 
 Zakres wsparcia:
-- wspomaganie w napisaniu kodu kolejnych etapów na podstawie szkieletu z instrukcji:
+- napisanie kodu kolejnych etapów na podstawie szkieletu z instrukcji:
   konwertery CSV <-> JSON, integracja LibreOffice (DOCX/ODT/PDF),
-  konwersja PDF -> TXT, polityka nadpisywania, pomiar czasu oraz
-  interfejs graficzny gui.py,
+  konwersja PDF -> TXT, polityka nadpisywania, pomiar czasu,
+  interfejs graficzny gui.py, wspólny model błędów, wykrywanie
+  LibreOffice na różnych systemach i konwersja w osobnym wątku,
 - wyjaśnianie działania kodu krok po kroku (dekoratory, klasy, wyjątki,
   subprocess, Tkinter) oraz wskazanie miejsc do modyfikacji,
 - pomoc w rozwiązywaniu problemów przy uruchamianiu (ukryte rozszerzenia
   plików w Windows, konfiguracja interpretera w VS Code),
-- przygotowanie oczekiwanych wyników, sprawdzenie konwersji i przygotowanie
-  dokumentacji (README, raport testów, dziennik zmian).
+- przygotowanie oczekiwanych wyników, testów automatycznych, sprawdzenie
+  konwersji i przygotowanie dokumentacji (README, raport testów,
+  dziennik zmian).
 
 Wkład autora:
 - wybór i przygotowanie danych testowych (studenci.csv, produkty.json,

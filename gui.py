@@ -1,20 +1,30 @@
-"""LAB 4: graficzny interfejs (Tkinter/ttk) dla konwertera plików.
+"""Graficzny interfejs (Tkinter/ttk) dla konwertera plików.
 
 Uruchomienie: python gui.py
 Cała logika konwersji jest w konwerter.py - GUI tylko z niej korzysta.
+
+Konwersja działa w osobnym wątku, więc okno nie "zamarza" podczas
+dłuższych operacji (np. LibreOffice). Tkinter nie pozwala zmieniać okna
+z innego wątku, dlatego wątek roboczy tylko wkłada wynik do kolejki,
+a okno co 100 ms sprawdza kolejkę metodą root.after().
 """
 from pathlib import Path
+import queue
+import threading
+import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 from konwerter import (
+    ConversionError,
     ConversionRequest,
-    ToolNotFoundError,
     REGISTRY,
     available_targets,
     execute,
     supported_sources,
 )
+
+POLL_MS = 100     # co ile milisekund okno sprawdza, czy konwersja się skończyła
 
 
 class KonwerterApp:
@@ -29,6 +39,10 @@ class KonwerterApp:
         self.format_var = tk.StringVar()
         self.info_var = tk.StringVar(value="Wybierz plik do konwersji.")
 
+        # Kolejka do przekazania wyniku z wątku roboczego do okna
+        self.results: queue.Queue = queue.Queue()
+        self.worker: threading.Thread | None = None
+
         frame = ttk.Frame(root, padding=16)
         frame.grid()
 
@@ -36,13 +50,15 @@ class KonwerterApp:
         ttk.Label(frame, text="Plik wejściowy:").grid(row=0, column=0, sticky="w", pady=4)
         ttk.Entry(frame, textvariable=self.source_var, width=50, state="readonly").grid(
             row=0, column=1, padx=8)
-        ttk.Button(frame, text="Wybierz plik…", command=self.choose_file).grid(row=0, column=2)
+        self.file_btn = ttk.Button(frame, text="Wybierz plik…", command=self.choose_file)
+        self.file_btn.grid(row=0, column=2, sticky="ew")
 
         # --- katalog docelowy ---
         ttk.Label(frame, text="Katalog docelowy:").grid(row=1, column=0, sticky="w", pady=4)
         ttk.Entry(frame, textvariable=self.output_var, width=50, state="readonly").grid(
             row=1, column=1, padx=8)
-        ttk.Button(frame, text="Wybierz katalog…", command=self.choose_dir).grid(row=1, column=2)
+        self.dir_btn = ttk.Button(frame, text="Wybierz katalog…", command=self.choose_dir)
+        self.dir_btn.grid(row=1, column=2, sticky="ew")
 
         # --- format docelowy (lista zależna od rozszerzenia) ---
         ttk.Label(frame, text="Format docelowy:").grid(row=2, column=0, sticky="w", pady=4)
@@ -55,11 +71,19 @@ class KonwerterApp:
             row=3, column=0, columnspan=2, sticky="w", pady=(12, 0))
         self.convert_btn = ttk.Button(frame, text="Konwertuj", command=self.run_conversion,
                                       state="disabled")
-        self.convert_btn.grid(row=3, column=2, pady=(12, 0))
+        self.convert_btn.grid(row=3, column=2, sticky="ew", pady=(12, 0))
+
+        # --- pasek postępu (widoczny tylko podczas konwersji) ---
+        self.progress = ttk.Progressbar(frame, mode="indeterminate")
+        self.progress.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(12, 0))
+        self.progress.grid_remove()
 
         # Za każdym razem, gdy zmieni się któreś pole, sprawdzamy, czy można włączyć przycisk
         for var in (self.source_var, self.output_var, self.format_var):
             var.trace_add("write", lambda *args: self.update_button())
+
+        # Zamknięcie okna w trakcie konwersji wymaga potwierdzenia
+        root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     # -----------------------------------------------------------------------
     # Wybór pliku i katalogu
@@ -102,11 +126,15 @@ class KonwerterApp:
                 f"Obsługiwane: {', '.join(supported_sources())}"
             )
 
+    def is_busy(self) -> bool:
+        return self.worker is not None and self.worker.is_alive()
+
     def update_button(self) -> None:
-        """Przycisk 'Konwertuj' jest aktywny tylko dla poprawnej pary"""
+        """Przycisk 'Konwertuj' jest aktywny tylko dla poprawnej pary i gdy nic nie trwa."""
         source = self.source_var.get()
         ok = bool(source and self.output_var.get() and self.format_var.get()
-                  and (Path(source).suffix.lower(), self.format_var.get()) in REGISTRY)
+                  and (Path(source).suffix.lower(), self.format_var.get()) in REGISTRY
+                  and not self.is_busy())
         self.convert_btn.config(state="normal" if ok else "disabled")
 
     # -----------------------------------------------------------------------
@@ -114,6 +142,8 @@ class KonwerterApp:
     # -----------------------------------------------------------------------
 
     def run_conversion(self) -> None:
+        if self.is_busy():                 # nie uruchamiamy dwóch konwersji naraz
+            return
         source = Path(self.source_var.get())
         output_dir = Path(self.output_var.get())
         target_format = self.format_var.get()
@@ -140,44 +170,67 @@ class KonwerterApp:
                 return
             request = ConversionRequest(source, target_format, output_dir, overwrite=True)
 
-        # Konwersja może chwilę potrwać (LibreOffice) -> kursor "zajęty", przycisk wyłączony
-        self.info_var.set("Trwa konwersja…")
-        self.convert_btn.config(state="disabled")
-        self.root.config(cursor="watch")
-        self.root.update_idletasks()
+        # Uruchamiamy konwersję w osobnym wątku -> okno dalej reaguje
+        self.set_busy(True)
+        self.info_var.set(f"Trwa konwersja {source.name}…")
+        self.worker = threading.Thread(target=self.worker_job, args=(request,), daemon=True)
+        self.worker.start()
+        self.root.after(POLL_MS, self.check_result)
 
+    def worker_job(self, request: ConversionRequest) -> None:
+        """Działa w wątku roboczym. NIE dotyka okna - tylko wkłada wynik do kolejki."""
+        start = time.perf_counter()
         try:
             result = execute(request)
-        except ToolNotFoundError as e:
-            self.show_error("Brak narzędzia", str(e))
-        except FileNotFoundError:
-            self.show_error("Brak pliku",
-                            "Nie znaleziono pliku wejściowego. Mógł zostać przeniesiony "
-                            "lub usunięty – wybierz go ponownie.")
-        except NotADirectoryError:
-            self.show_error("Brak katalogu",
-                            "Wybrany katalog docelowy nie istnieje. Wybierz inny katalog.")
-        except FileExistsError:
-            self.show_error("Plik już istnieje",
-                            "Plik wynikowy już istnieje, a nadpisanie nie zostało potwierdzone.")
-        except ValueError as e:
-            self.show_error("Nieprawidłowe dane",
-                            f"Plik nie mógł zostać przekonwertowany:\n{e}")
-        except RuntimeError as e:
-            self.show_error("Konwersja nie powiodła się", str(e))
-        except Exception as e:             # cokolwiek nieprzewidzianego
-            self.show_error("Nieoczekiwany błąd", f"{type(e).__name__}: {e}")
-        else:
-            self.info_var.set(f"Gotowe: {result.name}")
+            self.results.put(("ok", result, time.perf_counter() - start))
+        except Exception as e:             # każdy błąd przekazujemy do okna
+            self.results.put(("error", e, time.perf_counter() - start))
+
+    def check_result(self) -> None:
+        """Działa w wątku okna. Sprawdza, czy wątek roboczy skończył pracę."""
+        try:
+            status, value, elapsed = self.results.get_nowait()
+        except queue.Empty:
+            self.root.after(POLL_MS, self.check_result)    # jeszcze nie - sprawdź za chwilę
+            return
+
+        self.worker = None                 # wątek skończył pracę
+        self.set_busy(False)
+        if status == "ok":
+            self.info_var.set(f"Gotowe: {value.name} ({elapsed:.1f} s)")
             messagebox.showinfo("Konwersja zakończona",
-                                f"Utworzono plik:\n{result}")
-        finally:                           # wykona się zawsze, także po błędzie
-            self.root.config(cursor="")
+                                f"Utworzono plik:\n{value}\n\nCzas: {elapsed:.1f} s")
+        elif isinstance(value, ConversionError):          # wspólny model błędów
+            self.show_error(value.title, value.user_message())
+        else:                                             # coś nieprzewidzianego
+            self.show_error("Nieoczekiwany błąd", f"{type(value).__name__}: {value}")
+
+    def set_busy(self, busy: bool) -> None:
+        """Blokuje/odblokowuje przyciski i pokazuje/ukrywa pasek postępu."""
+        state = "disabled" if busy else "normal"
+        self.file_btn.config(state=state)
+        self.dir_btn.config(state=state)
+        if busy:
+            self.format_box.config(state="disabled")
+            self.convert_btn.config(state="disabled")
+            self.progress.grid()
+            self.progress.start(10)
+        else:
+            self.progress.stop()
+            self.progress.grid_remove()
+            if self.format_box.cget("values"):
+                self.format_box.config(state="readonly")
             self.update_button()
 
     def show_error(self, title: str, message: str) -> None:
         self.info_var.set(f"Błąd: {title}")
         messagebox.showerror(title, message)
+
+    def on_close(self) -> None:
+        if self.is_busy() and not messagebox.askyesno(
+                "Trwa konwersja", "Konwersja jeszcze trwa. Czy na pewno zamknąć program?"):
+            return
+        self.root.destroy()
 
 
 if __name__ == "__main__":

@@ -28,12 +28,17 @@ OBSŁUGIWANE FUNKCJE
   - lista formatów docelowych zależna od rozszerzenia pliku,
   - blokada niedozwolonych par formatów,
   - pytanie przed nadpisaniem istniejącego pliku,
-  - zrozumiałe komunikaty błędów.
+  - konwersja w osobnym wątku - okno nie zamarza, w trakcie widoczny
+    jest pasek postępu, a przyciski są zablokowane,
+  - zrozumiałe komunikaty błędów ze wskazówką, co zrobić.
+- Wspólny model błędów - wszystkie błędy konwersji dziedziczą po klasie
+  ConversionError i niosą tytuł, opis oraz wskazówkę dla użytkownika.
 - Wywoływanie narzędzia zewnętrznego (LibreOffice) w tle, bez shell=True,
   ze sprawdzaniem kodu zakończenia i limitem czasu (60 s).
-- Wykrywanie braku LibreOffice lub biblioteki pypdf z opisem,
-  co należy zainstalować.
-- Rejestrowanie czasu każdej konwersji w terminalu ([log] ...).
+- Wykrywanie LibreOffice na Windows, macOS i Linux; brak LibreOffice
+  lub biblioteki pypdf jest wykrywany i opisany.
+- Rejestrowanie czasu każdej konwersji (terminal i okno programu).
+- Testy automatyczne (unittest) - 42 testy.
 
 
 WYMAGANIA
@@ -41,18 +46,50 @@ WYMAGANIA
 
 - Python 3.10 lub nowszy - https://www.python.org/downloads/
   (przy instalacji na Windowsie zaznacz "Add Python to PATH")
-- Tkinter - dołączony do Pythona na Windowsie
+- Tkinter - dołączony do Pythona na Windowsie i macOS
+  (na Linuksie np.: sudo apt install python3-tk)
 - pypdf 5.0 lub nowszy - potrzebny do konwersji PDF -> TXT
   (zapisany w requirements.txt)
 - LibreOffice 7.x lub nowszy - potrzebny do konwersji DOCX / ODT / PDF
   https://www.libreoffice.org/download/
 
-LibreOffice nie instaluje się przez pip. Program sam szuka go w PATH
-oraz w domyślnym folderze C:\Program Files\LibreOffice.
-
 Brak LibreOffice lub pypdf nie blokuje programu - pozostałe konwersje
 działają, a przy próbie użycia brakującego narzędzia pojawia się
-komunikat z instrukcją.
+komunikat z instrukcją instalacji dla danego systemu.
+
+
+ZALEŻNOŚĆ: LIBREOFFICE
+----------------------
+
+LibreOffice nie instaluje się przez pip. Instalacja:
+
+- Windows: instalator ze strony https://www.libreoffice.org/download/
+- macOS:   instalator ze strony jw. albo: brew install --cask libreoffice
+- Linux:   pakiet systemowy, np.: sudo apt install libreoffice
+           (Fedora: sudo dnf install libreoffice)
+
+Program szuka LibreOffice automatycznie (funkcja find_libreoffice),
+w tej kolejności:
+
+1. Zmienna środowiskowa LIBREOFFICE_PATH - jeśli jest ustawiona,
+   wskazuje pełną ścieżkę do programu soffice (dla nietypowych instalacji).
+2. PATH - polecenia soffice i libreoffice.
+3. Typowe foldery instalacji dla danego systemu:
+   - Windows: C:\Program Files\LibreOffice\program\soffice.exe
+              C:\Program Files (x86)\LibreOffice\program\soffice.exe
+   - macOS:   /Applications/LibreOffice.app/Contents/MacOS/soffice
+              ~/Applications/LibreOffice.app/Contents/MacOS/soffice
+   - Linux:   /usr/bin/soffice, /usr/lib/libreoffice/program/soffice,
+              /usr/local/bin/soffice, /snap/bin/libreoffice,
+              /opt/libreoffice*/program/soffice
+
+Przykład ustawienia LIBREOFFICE_PATH na Windowsie (w terminalu, przed
+uruchomieniem programu):
+
+      set LIBREOFFICE_PATH=D:\Programy\LibreOffice\program\soffice.exe
+
+Jeśli LibreOffice nie zostanie znaleziony, przy konwersji dokumentu
+pojawia się okno "Brak narzędzia" z instrukcją instalacji.
 
 
 INSTALACJA
@@ -87,16 +124,29 @@ Po uruchomieniu pojawia się okno "Konwerter plików":
    (np. na testy/wyniki, żeby wyniki nie mieszały się z danymi).
 3. Z listy "Format docelowy" wybierz format. Lista zawiera tylko
    formaty dozwolone dla danego rozszerzenia pliku.
-4. Kliknij "Konwertuj".
+4. Kliknij "Konwertuj". Podczas konwersji pod przyciskiem pojawia się
+   pasek postępu, a przyciski są zablokowane. Okno cały czas reaguje
+   (można je np. przesuwać).
 5. Po zakończeniu pojawi się okno "Konwersja zakończona" ze ścieżką
-   utworzonego pliku. W razie problemu pojawi się okno z opisem błędu
-   i wskazówką, co zrobić.
+   utworzonego pliku i czasem konwersji. W razie problemu pojawi się
+   okno z opisem błędu i wskazówką, co zrobić.
 
 Jeśli plik wynikowy już istnieje, program zapyta, czy go zastąpić.
 Odpowiedź "Nie" pozostawia istniejący plik bez zmian.
 
-Konwersja dokumentów przez LibreOffice trwa 1-2 sekundy - w tym czasie
-kursor zmienia się w klepsydrę.
+Próba zamknięcia okna w trakcie konwersji wymaga potwierdzenia.
+
+
+TESTY AUTOMATYCZNE
+------------------
+
+W terminalu, w folderze projektu:
+
+      python -m unittest discover -s testy -v
+
+Testy obejmują m.in. validate(), available_targets(), konwertery
+CSV <-> JSON i dokumentów, wspólny model błędów, wykrywanie LibreOffice
+oraz brak zamrażania okna. Opis i wyniki: docs/RAPORT_TESTOW.txt.
 
 
 STRUKTURA KATALOGÓW
@@ -106,12 +156,14 @@ Projekt_python_konwerter/
    gui.py                - okno programu (Tkinter/ttk) - plik do uruchomienia
    konwerter.py          - logika: rejestr, walidacja, funkcje konwertujące
    testy/
+      test_konwerter.py  - testy automatyczne (unittest)
       dane testowe/      - pliki wejściowe do testów
       oczekiwane/        - sprawdzone, oczekiwane wyniki konwersji
       wyniki/            - wyniki konwersji z testów (poza repozytorium)
    docs/
       RAPORT_TESTOW.txt  - dane testowe, oczekiwane wyniki, raport testów
       ZRODLA.txt         - źródła, biblioteki, narzędzia AI
+   CHANGELOG.txt         - dziennik zmian
    README.txt            - ten plik
    requirements.txt      - zależności
    .gitignore            - pliki pomijane przez Git
@@ -126,9 +178,23 @@ JAK DZIAŁA PROGRAM
   i zgodę na nadpisanie; metoda validate() sprawdza, czy konwersja jest możliwa.
 - execute() - wybiera funkcję z rejestru, pilnuje polityki nadpisywania
   i mierzy czas.
+- Wspólny model błędów - klasa bazowa ConversionError i jej podklasy:
+     InputNotFoundError          - brak pliku wejściowego
+     OutputDirError              - brak katalogu docelowego
+     UnsupportedConversionError  - niedozwolona para formatów
+     OutputExistsError           - plik wynikowy istnieje, brak zgody na nadpisanie
+     InvalidInputError           - błędne dane (zły JSON, pusty CSV, złe kodowanie,
+                                   uszkodzony PDF)
+     ToolNotFoundError           - brak LibreOffice lub pypdf
+     ConversionFailedError       - narzędzie zwróciło błąd, przekroczono czas
+  Każdy błąd ma tytuł, opis i wskazówkę (metoda user_message()), więc okno
+  programu obsługuje wszystkie błędy jednym fragmentem kodu.
 - gui.py buduje okno i reaguje na kliknięcia; nie ma wpisanych formatów
   na sztywno - pobiera je z rejestru (available_targets, supported_sources),
   a konwersję zleca funkcji execute() z konwerter.py.
+- Konwersja działa w osobnym wątku (threading). Tkinter nie pozwala
+  zmieniać okna z innego wątku, dlatego wątek roboczy tylko wkłada wynik
+  do kolejki (queue.Queue), a okno co 100 ms sprawdza ją metodą root.after().
 
 Nowy kierunek konwersji dodaje się, dopisując funkcję z dekoratorem.
 Pojawi się ona w GUI bez żadnych zmian w gui.py.
@@ -142,7 +208,8 @@ CSV -> JSON
    Ograniczenia:
    - separatorem musi być przecinek; pliki ze średnikiem (typowe dla
      polskiego Excela) dają jedną kolumnę,
-   - plik musi być zapisany w UTF-8 (Windows-1250 daje błąd dekodowania),
+   - plik musi być zapisany w UTF-8 (plik w Windows-1250 jest odrzucany
+     z komunikatem i wskazówką, jak zapisać go w UTF-8),
    - wszystkie wartości trafiają do JSON jako tekst ("4.5", a nie 4.5),
    - pierwszy wiersz musi zawierać nagłówki.
 
@@ -180,16 +247,22 @@ PDF -> TXT
    Realizacja: biblioteka pypdf
    Ograniczenia:
    - odczytuje tylko warstwę tekstową - skany bez OCR dają pusty plik,
+   - polskie znaki mogą zostać odczytane jako zniekształcone, jeśli PDF
+     używa czcionki zapisującej litery z ogonkami jako dwa osobne znaki
+     (zaobserwowane dla PDF utworzonych przez LibreOffice na Windowsie,
+     np. "Zaż\x1co łć" zamiast "Zażółć"),
    - układ, tabele i obrazy są tracone (tabela staje się zwykłymi liniami tekstu),
-   - PDF zabezpieczony hasłem nie zostanie odczytany.
+   - PDF zabezpieczony hasłem lub uszkodzony nie zostanie odczytany
+     (pojawia się komunikat "Nieprawidłowe dane").
 
 Ograniczenia ogólne:
 - konwertowany jest jeden plik naraz (brak trybu wsadowego),
 - plik wynikowy ma nazwę pliku źródłowego z nowym rozszerzeniem;
   konflikt nazw jest obsługiwany pytaniem o nadpisanie,
-- podczas konwersji przez LibreOffice okno programu nie reaguje
-  przez 1-2 s (konwersja działa w głównym wątku),
-- konwersji nie można przerwać przed upływem limitu czasu.
+- trwającej konwersji nie można anulować przyciskiem; kończy się ona
+  sama albo po upływie limitu czasu (60 s),
+- zamknięcie okna w trakcie konwersji dokumentu może pozostawić
+  LibreOffice pracujący w tle do końca tej konwersji.
 
 
 ROZWIĄZYWANIE PROBLEMÓW
@@ -201,6 +274,12 @@ ROZWIĄZYWANIE PROBLEMÓW
 
 - "LibreOffice nie utworzył pliku wynikowego":
   zamknij otwarte okna LibreOffice i spróbuj ponownie.
+
+- "Brak narzędzia", choć LibreOffice jest zainstalowany:
+  ustaw zmienną LIBREOFFICE_PATH (patrz: ZALEŻNOŚĆ: LIBREOFFICE).
+
+- "Plik CSV nie jest zapisany w kodowaniu UTF-8":
+  w Excelu wybierz Plik -> Zapisz jako -> CSV UTF-8 (rozdzielany przecinkami).
 
 - "Brak biblioteki pypdf":
   python -m pip install -r requirements.txt
@@ -216,19 +295,6 @@ AUTORZY
 - Grzegorz Dyląg - autor projektu.
 - Szkielet architektury (rejestr konwerterów, ConversionRequest, execute,
   konwerter DOCX -> PDF) pochodzi z instrukcji projektowej przedmiotu.
-- Ze względu na słabą znajomość języka Python, przy tworzeniu kodu
-  i dokumentacji korzystano z narzędzia AI Claude (Anthropic).
+- Ze względu na słabą znajomość języka Python, przy tworzeniu kodu,
+  testów i dokumentacji korzystano z narzędzia AI Claude (Anthropic).
   Zakres wsparcia opisano w pliku docs/ZRODLA.txt.
-
-HISTORIA PRACY (GIT)
---------------------
-
-Pełna historia znajduje się w repozytorium Git. Najważniejsze commity:
-
-2026-10-13  Initial commit
-2026-10-13  python konwerter wrzucenie na gita   - Lab. 2: CSV <-> JSON
-2026-10-13  Create README.md
-2026-10-22  Rozszerzenie                         - Lab. 3: DOCX/ODT/PDF, LibreOffice, pypdf
-2026-10-28  GUI                                  - Lab. 4: okno programu (Tkinter)
-2026-10-28  GUI oraz lekkie poprawki             - Lab. 4: poprawki okna
-2026-11-02  Finalny pakiet do oddania zadania    - struktura katalogów, dokumentacja
