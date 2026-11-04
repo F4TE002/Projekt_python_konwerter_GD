@@ -18,10 +18,13 @@ from tkinter import ttk, filedialog, messagebox
 from konwerter import (
     ConversionError,
     ConversionRequest,
+    LOG_FILE,
     REGISTRY,
     available_targets,
     execute,
+    setup_logging,
     supported_sources,
+    supported_targets,
 )
 
 POLL_MS = 100     # co ile milisekund okno sprawdza, czy konwersja się skończyła
@@ -65,6 +68,8 @@ class KonwerterApp:
         self.format_box = ttk.Combobox(frame, textvariable=self.format_var,
                                        state="disabled", width=15)
         self.format_box.grid(row=2, column=1, sticky="w", padx=8)
+        ttk.Button(frame, text="Obsługiwane pary…", command=self.show_matrix).grid(
+            row=2, column=2, sticky="ew")
 
         # --- komunikat + przycisk ---
         ttk.Label(frame, textvariable=self.info_var, foreground="#555", wraplength=420).grid(
@@ -125,6 +130,27 @@ class KonwerterApp:
                 f"Pliki „{source.suffix or 'bez rozszerzenia'}” nie są obsługiwane. "
                 f"Obsługiwane: {', '.join(supported_sources())}"
             )
+
+    def show_matrix(self) -> ttk.Treeview:
+        """Okno z macierzą wspieranych par; zawartość pochodzi wprost z rejestru."""
+        window = tk.Toplevel(self.root)
+        window.title("Obsługiwane pary formatów")
+        window.transient(self.root)
+
+        targets = supported_targets()
+        table = ttk.Treeview(window, columns=targets, height=len(supported_sources()))
+        table.heading("#0", text="Z \\ Na")
+        table.column("#0", width=80, anchor="center")
+        for target in targets:
+            table.heading(target, text=target)
+            table.column(target, width=70, anchor="center")
+        for source in supported_sources():
+            marks = ["✓" if (source, target) in REGISTRY else "–" for target in targets]
+            table.insert("", "end", text=source, values=marks)
+        table.grid(padx=16, pady=(16, 8))
+
+        ttk.Button(window, text="Zamknij", command=window.destroy).grid(pady=(0, 16))
+        return table
 
     def is_busy(self) -> bool:
         return self.worker is not None and self.worker.is_alive()
@@ -203,7 +229,9 @@ class KonwerterApp:
         elif isinstance(value, ConversionError):          # wspólny model błędów
             self.show_error(value.title, value.user_message())
         else:                                             # coś nieprzewidzianego
-            self.show_error("Nieoczekiwany błąd", f"{type(value).__name__}: {value}")
+            self.show_error("Nieoczekiwany błąd",
+                            f"{type(value).__name__}: {value}\n\n"
+                            f"Spróbuj ponownie. Szczegóły są w pliku {LOG_FILE.name}.")
 
     def set_busy(self, busy: bool) -> None:
         """Blokuje/odblokowuje przyciski i pokazuje/ukrywa pasek postępu."""
@@ -234,6 +262,7 @@ class KonwerterApp:
 
 
 if __name__ == "__main__":
+    setup_logging()
     root = tk.Tk()
     KonwerterApp(root)
     root.mainloop()
