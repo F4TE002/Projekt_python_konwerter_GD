@@ -105,6 +105,18 @@ class TestValidate(TestBase):
         req = k.ConversionRequest(Path("x/dane.CSV"), ".JSON", Path("wyniki"))
         self.assertEqual(req.target_path(), Path("wyniki/dane.json"))
 
+    def test_katalog_bez_prawa_zapisu(self):
+        req = k.ConversionRequest(DANE / "studenci.csv", ".json", self.out)
+        with mock.patch("konwerter.Path.mkdir", side_effect=PermissionError("brak")):
+            with self.assertRaisesRegex(k.OutputDirError, "zapisu"):
+                req.validate()
+
+    def test_puste_wybory(self):
+        with self.assertRaises(k.InputNotFoundError):
+            k.ConversionRequest(Path(""), ".json", self.out).validate()
+        with self.assertRaises(k.UnsupportedConversionError):
+            k.ConversionRequest(DANE / "studenci.csv", "", self.out).validate()
+
 
 # ---------------------------------------------------------------------------
 # available_targets()
@@ -176,6 +188,31 @@ class TestCsvJson(TestBase):
         self.assertEqual((DANE / "trudny2.csv").read_text(encoding="utf-8").splitlines(),
                          z_powrotem.read_text(encoding="utf-8").splitlines())
 
+    def test_kolejnosc_kolumn_i_puste_wartosci(self):
+        plik = self.plik("dane.csv", "ż,a,m\nźdźbło,,x\n1\n")
+        wiersze = json.loads(self.run_conv(plik, ".json").read_text(encoding="utf-8"))
+        self.assertEqual(list(wiersze[0]), ["ż", "a", "m"])
+        self.assertEqual(wiersze[0], {"ż": "źdźbło", "a": "", "m": "x"})     # puste pole -> ""
+        self.assertEqual(wiersze[1], {"ż": "1", "a": None, "m": None})       # brak pola -> null
+
+    def test_csv_tylko_naglowek(self):
+        wynik = self.run_conv(self.plik("naglowek.csv", "a,b\n"), ".json")
+        self.assertEqual(json.loads(wynik.read_text(encoding="utf-8")), [])
+
+    def test_csv_z_bom_z_excela(self):
+        wynik = self.run_conv(self.plik("excel.csv", "﻿imię\nŁukasz\n"), ".json")
+        self.assertEqual(json.loads(wynik.read_text(encoding="utf-8")), [{"imię": "Łukasz"}])
+
+    def test_json_z_bom(self):
+        wynik = self.run_conv(self.plik("bom.json", '﻿[{"a": "ż"}]'), ".csv")
+        self.assertEqual(wynik.read_text(encoding="utf-8").splitlines(), ["a", "ż"])
+
+    def test_json_wartosci_specjalne(self):
+        plik = self.plik("typy.json", '[{"t": true, "n": null, "l": [1, "ą"]}]')
+        wynik = self.run_conv(plik, ".csv")
+        self.assertEqual(wynik.read_text(encoding="utf-8").splitlines(),
+                         ["t,n,l", 'true,,"[1, ""ą""]"'])
+
 
 # ---------------------------------------------------------------------------
 # Wspólny model błędów
@@ -203,10 +240,78 @@ class TestModelBledow(TestBase):
         with self.assertRaisesRegex(k.InvalidInputError, "listą obiektów"):
             self.run_conv(plik, ".csv")
 
+    def test_json_bez_danych(self):
+        for nazwa, tresc in (("lista.json", "[]"), ("obiekt.json", "[{}]")):
+            with self.assertRaisesRegex(k.InvalidInputError, "żadnych danych"):
+                self.run_conv(self.plik(nazwa, tresc), ".csv")
+
     def test_pusty_csv(self):
-        plik = self.plik("pusty.csv", "")
-        with self.assertRaisesRegex(k.InvalidInputError, "pusty"):
-            self.run_conv(plik, ".json")
+        for nazwa, tresc in (("pusty.csv", ""), ("entery.csv", "\n\n\n")):
+            with self.assertRaisesRegex(k.InvalidInputError, "pusty"):
+                self.run_conv(self.plik(nazwa, tresc), ".json")
+
+    def test_csv_powtorzone_kolumny(self):
+        with self.assertRaisesRegex(k.InvalidInputError, "powtórzone"):
+            self.run_conv(self.plik("dup.csv", "a,a\n1,2\n"), ".json")
+
+    def test_csv_wiersz_z_nadmiarem_pol(self):
+        with self.assertRaisesRegex(k.InvalidInputError, "Wiersz 3"):
+            self.run_conv(self.plik("nadmiar.csv", "a,b\n1,2\n1,2,3\n"), ".json")
+
+    def test_uszkodzone_docx_i_odt(self):
+        # sprawdzane przed uruchomieniem LibreOffice, więc nie wymaga narzędzia
+        with mock.patch("konwerter.subprocess.run") as run:
+            for nazwa in ("zly.docx", "zly.odt"):
+                with self.assertRaisesRegex(k.InvalidInputError, "uszkodzony"):
+                    self.run_conv(self.plik(nazwa, "to nie jest dokument"), ".pdf")
+        run.assert_not_called()
+
+    def test_archiwum_bez_tresci_dokumentu(self):
+        plik = self.plik("arkusz.docx", b"")
+        with zipfile.ZipFile(plik, "w") as z:              # np. XLSX ze zmienioną nazwą
+            z.writestr("xl/workbook.xml", "<x/>")
+        with self.assertRaisesRegex(k.InvalidInputError, "uszkodzony"):
+            self.run_conv(plik, ".pdf")
+
+    @unittest.skipUnless(pypdf_dostepny(), "brak pypdf")
+    def test_pdf_bez_tekstu(self):
+        from pypdf import PdfWriter
+        plik = self.plik("skan.pdf", b"")
+        writer = PdfWriter()
+        writer.add_blank_page(200, 200)
+        writer.write(plik)
+        with self.assertRaisesRegex(k.InvalidInputError, "nie zawiera tekstu"):
+            self.run_conv(plik, ".txt")
+
+    @unittest.skipUnless(pypdf_dostepny(), "brak pypdf")
+    def test_pdf_zabezpieczony_haslem(self):
+        from pypdf import PdfWriter
+        plik = self.plik("tajny.pdf", b"")
+        writer = PdfWriter()
+        writer.add_blank_page(200, 200)
+        writer.encrypt("haslo", algorithm="RC4-128")
+        writer.write(plik)
+        with self.assertRaisesRegex(k.InvalidInputError, "hasłem"):
+            self.run_conv(plik, ".txt")
+
+    def test_czyszczenie_tekstu_pdf(self):
+        self.assertEqual(k.clean_pdf_text("ó\x1c\r\na\tb"), "ó\na\tb")
+
+    def test_brak_pypdf_jest_opisany(self):
+        plik = self.plik("a.pdf", "x")
+        with mock.patch.dict(sys.modules, {"pypdf": None}):
+            with self.assertRaises(k.ToolNotFoundError) as ctx:
+                self.run_conv(plik, ".txt")
+        self.assertIn("pip install", ctx.exception.user_message())
+
+    def test_bledy_i_sukcesy_sa_logowane(self):
+        with self.assertLogs("konwerter", "ERROR") as logi:
+            with self.assertRaises(k.InvalidInputError):
+                self.run_conv(self.plik("zly.json", "{"), ".csv")
+        self.assertIn("Nieprawidłowe dane", logi.output[0])
+        with self.assertLogs("konwerter", "INFO") as logi:
+            self.run_conv(DANE / "studenci.csv", ".json")
+        self.assertIn("gotowe", logi.output[0])
 
     def test_csv_w_kodowaniu_windows_1250(self):
         plik = self.plik("excel.csv", "imie,miasto\nŁukasz,Wrocław\n".encode("cp1250"))
@@ -245,6 +350,19 @@ class TestNadpisywanie(TestBase):
         istniejacy.write_text("STARA TREŚĆ", encoding="utf-8")
         self.run_conv(DANE / "studenci.csv", ".json", overwrite=True)
         self.assertIn("Kowalska", istniejacy.read_text(encoding="utf-8"))
+
+    def test_nieudana_konwersja_nie_niszczy_starego_pliku(self):
+        istniejacy = self.out / "zly.csv"
+        istniejacy.write_text("STARA TREŚĆ", encoding="utf-8")
+        with self.assertRaises(k.InvalidInputError):
+            self.run_conv(self.plik("zly.json", "{"), ".csv", overwrite=True)
+        self.assertEqual(istniejacy.read_text(encoding="utf-8"), "STARA TREŚĆ")
+
+    def test_w_katalogu_docelowym_nie_zostaja_smieci(self):
+        with self.assertRaises(k.InvalidInputError):
+            self.run_conv(self.plik("zly.json", "{"), ".csv")
+        self.run_conv(DANE / "studenci.csv", ".json")
+        self.assertEqual(sorted(p.name for p in self.out.iterdir()), ["studenci.json", "wej"])
 
 
 # ---------------------------------------------------------------------------
@@ -346,12 +464,23 @@ class TestDokumenty(TestBase):
     def test_pdf_do_txt(self):
         txt = self.run_conv(self.run_conv(DANE / "dokument.docx", ".pdf"), ".txt")
         tekst = txt.read_text(encoding="utf-8")
-        # Sprawdzamy słowa bez polskich znaków: zależnie od czcionki, jakiej
-        # LibreOffice użyje w PDF (inna na Windows, inna na Linux), litery
-        # z ogonkami mogą zostać odczytane przez pypdf jako zniekształcone.
-        # To znane ograniczenie konwersji PDF -> TXT (opisane w README).
+        # dokument.docx używa czcionki Cambria, dla której LibreOffice na Windowsie
+        # zapisuje w PDF błędną warstwę tekstu (ograniczenie opisane w README),
+        # dlatego tutaj sprawdzamy słowa bez polskich znaków. Polskie znaki
+        # sprawdza test_pdf_do_txt_zachowuje_polskie_znaki.
         for slowo in ("Dokument testowy", "Konwerter", "DOCX", "PDF", "ODT", "Format"):
             self.assertIn(slowo, tekst)
+
+    @unittest.skipUnless(pypdf_dostepny(), "brak pypdf")
+    def test_pdf_do_txt_zachowuje_polskie_znaki(self):
+        txt = self.run_conv(self.run_conv(DANE / "tekst.txt", ".pdf"), ".txt")
+        self.assertIn("Zażółć gęślą jaźń. ĄĘÓŁŚŻŹĆŃ", txt.read_text(encoding="utf-8"))
+
+    def test_akapity_txt_zostaja_osobnymi_akapitami(self):
+        wynik = self.run_conv(DANE / "tekst.txt", ".docx")
+        with zipfile.ZipFile(wynik) as z:
+            tresc = z.read("word/document.xml").decode("utf-8")
+        self.assertEqual(tresc.count("<w:p>") + tresc.count("<w:p "), 4)
 
 
 # ---------------------------------------------------------------------------
@@ -424,6 +553,43 @@ class TestGuiBezZamrazania(TestBase):
                 self.root.update()
                 time.sleep(0.01)
         self.assertEqual(self.messages[-1], "Brak narzędzia")
+
+    def test_formaty_zalezne_od_rozszerzenia(self):
+        self.app.source_var.set(str(DANE / "dokument.docx"))
+        self.app.output_var.set(str(self.out))
+        self.app.refresh_formats(DANE / "dokument.docx")
+        self.assertEqual(list(self.app.format_box["values"]), [".odt", ".pdf"])
+        self.assertEqual(str(self.app.convert_btn["state"]), "normal")
+
+    def test_nieobslugiwany_plik_blokuje_konwersje(self):
+        self.app.source_var.set("dane.xyz")
+        self.app.output_var.set(str(self.out))
+        self.app.refresh_formats(Path("dane.xyz"))
+        self.assertEqual(str(self.app.format_box["state"]), "disabled")
+        self.assertEqual(str(self.app.convert_btn["state"]), "disabled")
+
+    def test_odmowa_nadpisania_nie_uruchamia_konwersji(self):
+        istniejacy = self.out / "studenci.json"
+        istniejacy.write_text("STARA TREŚĆ", encoding="utf-8")
+        self.app.source_var.set(str(DANE / "studenci.csv"))
+        self.app.output_var.set(str(self.out))
+        self.app.refresh_formats(DANE / "studenci.csv")
+        with mock.patch("gui.messagebox.askyesno", return_value=False), \
+             mock.patch("gui.execute") as wykonaj:
+            self.app.run_conversion()
+        wykonaj.assert_not_called()
+        self.assertEqual(istniejacy.read_text(encoding="utf-8"), "STARA TREŚĆ")
+
+    def test_macierz_par_zgodna_z_rejestrem(self):
+        tabela = self.app.show_matrix()
+        kolumny = list(tabela["columns"])
+        znaczniki = 0
+        for wiersz in tabela.get_children():
+            zrodlo = tabela.item(wiersz, "text")
+            for cel, znak in zip(kolumny, tabela.item(wiersz, "values")):
+                self.assertEqual(znak == "✓", (zrodlo, cel) in k.REGISTRY)
+                znaczniki += znak == "✓"
+        self.assertEqual(znaczniki, len(k.REGISTRY))
 
 
 if __name__ == "__main__":
