@@ -11,8 +11,26 @@ Wyniki porównano z plikami w testy/oczekiwane/, które zostały sprawdzone
 ręcznie z danymi wejściowymi.
 
 Środowiska testowe:
-- Linux: Python 3.12, Tk 8.6, LibreOffice 24.2, pypdf 5.9
-- Windows (komputer autora): Python 3.14, LibreOffice, pypdf
+- Windows 11 (komputer autora): Python 3.14.3, LibreOffice 26.8.1, pypdf 6.21
+  - tu wykonano testy automatyczne aktualnej wersji (punkt 5),
+- Linux: Python 3.12, Tk 8.6, LibreOffice 24.2, pypdf 5.9 - tylko wcześniejsze
+  wersje programu (48 testów), aktualna wersja nie była tam uruchamiana.
+
+
+MINIMALNA MACIERZ TESTÓW Z INSTRUKCJI
+-------------------------------------
+
+Przypadek                      Gdzie sprawdzono
+-----------------------------  ------------------------------------------------
+Poprawny plik w każdej grupie  punkty 1 i 2; TestCsvJson, TestDokumenty
+Błędny lub uszkodzony plik     punkt 4 (nr 1-5, 10-14); TestModelBledow
+Nieobsługiwana para            punkt 3 (nr 3, 4, 11); TestValidate,
+                               TestGuiBezZamrazania
+Brak LibreOffice/biblioteki    punkt 4 (nr 8, 15); TestWykrywanieLibreOffice,
+                               TestModelBledow
+Plik docelowy już istnieje     punkt 3 (nr 5, 6); TestNadpisywanie,
+                               TestGuiBezZamrazania
+Polskie znaki, puste wartości  punkty 1.3, 1.4, 1.6; TestCsvJson, TestDokumenty
 
 
 1. DANE TESTOWE I OCZEKIWANE WYNIKI
@@ -42,7 +60,7 @@ logicznymi i cudzysłowem w nazwie (Monitor 27").
 Oczekiwany wynik (oczekiwane/produkty.csv):
 - nagłówek id,nazwa,kategoria,cena,dostepny i 4 wiersze,
 - cudzysłów w nazwie poprawnie zabezpieczony: "Monitor 27""",
-- true/false zapisane jako True/False.
+- true/false zapisane w tej samej postaci (true/false).
 
 
 1.3. trudny1.json -> CSV (przypadek trudny)
@@ -84,8 +102,8 @@ Oczekiwany wynik:
   z tą samą treścią,
 - PDF -> TXT (oczekiwane/dokument.txt): tekst dokumentu; tabela
   spłaszczona do zwykłych linii tekstu. Polskie znaki (Zażółć gęślą jaźń)
-  zachowane w PDF utworzonym na Linuksie; na Windowsie mogą zostać
-  zniekształcone (patrz punkt 5).
+  zachowane w PDF utworzonym na Linuksie; na Windowsie ten konkretny dokument
+  ma w PDF błędną warstwę tekstu z powodu czcionki Cambria (patrz punkt 5).
 
 
 1.6. tekst.txt -> PDF, DOCX, ODT
@@ -154,6 +172,7 @@ Nr  Scenariusz                         Oczekiwane zachowanie                    
 10  zamknięcie okna w trakcie          pytanie "Trwa konwersja"; odpowiedź       OK
     konwersji                          "Nie" - okno zostaje, konwersja kończy
                                        się poprawnie
+11  przycisk "Obsługiwane pary..."     okno z macierzą par zgodną z rejestrem    OK
 
 
 4. TESTY OBSŁUGI BŁĘDÓW (WSPÓLNY MODEL BŁĘDÓW)
@@ -179,14 +198,30 @@ Nr  Sytuacja                           Okno z komunikatem                       
 5   uszkodzony plik PDF                "Nieprawidłowe dane": "Plik PDF jest      OK
                                        uszkodzony lub nieprawidłowy"
 6   plik usunięty po wybraniu          "Brak pliku" + prośba o ponowny wybór     OK
-7   katalog usunięty po wybraniu       "Brak katalogu" + prośba o wybór          OK
-                                       istniejącego katalogu
+7   katalog usunięty po wybraniu       "Problem z katalogiem docelowym"          OK
+                                       + prośba o wybór istniejącego katalogu
 8   brak LibreOffice                   "Brak narzędzia" + instrukcja instalacji  OK
                                        dla danego systemu i zmiennej
                                        LIBREOFFICE_PATH; konwersje CSV/JSON
                                        działają dalej
 9   LibreOffice zwraca kod błędu       "Konwersja nie powiodła się"              OK
                                        z kodem zakończenia i opisem błędu
+10  uszkodzony plik DOCX lub ODT       "Nieprawidłowe dane": "Plik ... jest      OK
+    (także pusty)                      uszkodzony lub nie jest dokumentem";
+                                       LibreOffice nie jest uruchamiany
+11  CSV: powtórzone nazwy kolumn       "Nieprawidłowe dane" + wskazówka          OK
+12  CSV: wiersz z nadmiarem pól        "Nieprawidłowe dane" z numerem wiersza    OK
+13  JSON: pusta lista []               "Nieprawidłowe dane": brak danych         OK
+14  PDF bez tekstu lub z hasłem        "Nieprawidłowe dane" + wskazówka          OK
+15  brak biblioteki pypdf              "Brak narzędzia" + polecenie instalacji   OK
+16  katalog bez prawa zapisu           "Problem z katalogiem docelowym":         OK
+    (sprawdzone na C:\Windows\System32) "Brak możliwości zapisu" + wskazówka
+17  plik wynikowy otwarty w innym      "Konwersja nie powiodła się" + wskazówka; OK
+    programie, zgoda na nadpisanie     stara treść zachowana
+18  nieudana konwersja, zgoda na       komunikat błędu; stary plik bez zmian,    OK
+    nadpisanie                         brak plików tymczasowych
+
+Wszystkie błędy i czasy konwersji są zapisywane w pliku konwerter.log.
 
 
 5. TESTY AUTOMATYCZNE
@@ -195,77 +230,76 @@ Nr  Sytuacja                           Okno z komunikatem                       
 Plik: testy/test_konwerter.py
 Uruchomienie: python -m unittest discover -s testy -v
 
-Wynik na Linuksie: 42 testy, 42 zaliczone, 0 błędów (czas ok. 9 s).
+Wynik aktualnej wersji na Windowsie, w czystym środowisku wirtualnym
+utworzonym według README: 73 testy, 73 zaliczone, 0 błędów (czas ok. 65 s).
 
-Wynik na Windowsie (pierwsze uruchomienie): 41 zaliczonych, 1 niezaliczony
-- test_pdf_do_txt. Tekst odczytany z PDF zawierał zniekształcone polskie
-znaki ("Konwerter pliko w: ... Zaż\x1co łć gęś lą" zamiast "Konwerter
-plików: ... Zażółć gęślą jaźń"). Przyczyna: LibreOffice na Windowsie użył
-czcionki, w której litery z ogonkami są zapisane w PDF jako litera i osobny
-znak diakrytyczny; pypdf nie skleja ich z powrotem. Sam plik PDF wyświetla
-się poprawnie. Test zmieniono tak, aby sprawdzał słowa bez polskich znaków,
-a ograniczenie opisano w README.txt (PDF -> TXT). Konwersje dokumentów
-na Windowsie trwały dłużej (ok. 3-9 s), co wynika z czasu uruchamiania
-LibreOffice.
+Polskie znaki w PDF -> TXT: pierwsze uruchomienie test_pdf_do_txt na Windowsie
+nie powiodło się - tekst z PDF zawierał zniekształcone znaki ("Narżędżie",
+"Zaż\x1co łć"). Przyczyna: dokument testowy używa czcionki Cambria, dla której
+LibreOffice zapisuje w PDF błędną warstwę tekstu. Biblioteka pdfminer odczytała
+z tego PDF to samo, więc błąd jest w pliku, a nie w pypdf. PDF-y z czcionkami
+Calibri, Arial, Times New Roman, Liberation Serif i Liberation Mono dały
+poprawny tekst. test_pdf_do_txt sprawdza więc na tym dokumencie słowa bez
+polskich znaków, a polskie znaki sprawdza osobny test
+test_pdf_do_txt_zachowuje_polskie_znaki (TXT -> PDF -> TXT).
 
-Wynik na Windowsie po poprawce testu: 42 testy, 42 zaliczone, 0 błędów
-(czas ok. 22 s).
-
-Po dodaniu konwersji TXT -> PDF/DOCX/ODT liczba testów wzrosła do 48.
-Wynik na Linuksie: 48 testów, 48 zaliczonych, 0 błędów (czas ok. 12 s).
-Wynik na Windowsie: 48 testów, 48 zaliczonych, 0 błędów (czas ok. 27 s);
-polskie znaki w konwersjach TXT -> DOCX i TXT -> ODT zachowane.
-
-Bez ekranu lub Tkintera 2 testy GUI są pomijane (skipped);
+Bez ekranu lub Tkintera 6 testów GUI jest pomijanych (skipped);
 bez LibreOffice pomijane są testy konwersji dokumentów.
 
 Grupa (klasa testów)          Liczba  Co sprawdza
 ----------------------------  ------  -------------------------------------------
-TestValidate                  8       validate(): poprawne zadanie, wielkość liter
-                                      rozszerzeń, brak pliku, brak katalogu,
-                                      niedozwolona para, plik istnieje bez zgody
-                                      i za zgodą, target_path()
+TestValidate                  10      validate(): poprawne zadanie, wielkość liter
+                                      rozszerzeń, brak pliku, brak katalogu, brak
+                                      prawa zapisu, puste wybory, niedozwolona
+                                      para, plik istnieje bez zgody i za zgodą,
+                                      target_path()
 TestAvailableTargets          7       available_targets(): formaty dla .docx, .odt,
                                       .txt, .csv, .json, .pdf; wielkość liter;
                                       plik nieobsługiwany i bez rozszerzenia;
                                       zgodność z rejestrem (10 kierunków)
-TestCsvJson                   5       konwertery csv_to_json i json_to_csv na danych
+TestCsvJson                   10      konwertery csv_to_json i json_to_csv na danych
                                       testowych (studenci, produkty, trudny1,
-                                      trudny2) oraz konwersja w obie strony
-                                      bez utraty danych
-TestModelBledow               8       wszystkie błędy dziedziczą po ConversionError
+                                      trudny2), konwersja w obie strony bez utraty
+                                      danych, kolejność kolumn, puste wartości,
+                                      sam nagłówek, BOM, true/null/listy
+TestModelBledow               18      wszystkie błędy dziedziczą po ConversionError
                                       i mają tytuł; komunikat ze wskazówką; błędny
-                                      JSON, JSON nie-lista, pusty CSV, CSV i TXT
-                                      w Windows-1250, uszkodzony PDF
-TestNadpisywanie              2       brak nadpisania bez zgody, nadpisanie za zgodą
+                                      JSON, JSON nie-lista, JSON bez danych, pusty
+                                      CSV, powtórzone kolumny, nadmiar pól, CSV i TXT
+                                      w Windows-1250, uszkodzone PDF, DOCX i ODT,
+                                      PDF bez tekstu i z hasłem, brak pypdf, dziennik
+TestNadpisywanie              4       brak nadpisania bez zgody, nadpisanie za zgodą,
+                                      nieudana konwersja nie niszczy starego pliku,
+                                      brak śmieci w katalogu docelowym
 TestWykrywanieLibreOffice     8       ścieżki dla Windows, macOS i Linux; zmienna
                                       LIBREOFFICE_PATH; brak narzędzia wykryty
                                       i opisany; wywołanie listą bez shell=True;
                                       wymuszenie UTF-8 dla TXT; niezerowy kod
                                       zakończenia to błąd
-TestDokumenty                 8       konwertery DOCX -> PDF, ODT -> PDF,
+TestDokumenty                 10      konwertery DOCX -> PDF, ODT -> PDF,
                                       DOCX -> ODT, ODT -> DOCX, PDF -> TXT
-                                      (sprawdza słowa kluczowe), TXT -> PDF,
+                                      (słowa kluczowe i polskie znaki), TXT -> PDF,
                                       TXT -> DOCX i TXT -> ODT (polskie znaki
-                                      w treści dokumentu)
-TestGuiBezZamrazania          2       okno reaguje podczas 1-sekundowej konwersji
+                                      w treści dokumentu, liczba akapitów)
+TestGuiBezZamrazania          6       okno reaguje podczas 1-sekundowej konwersji
                                       (kliknięcie wraca w < 0,2 s, okno odświeża
                                       się w trakcie); błąd z wątku roboczego
-                                      trafia do okna
+                                      trafia do okna; formaty zależne od pliku;
+                                      blokada nieobsługiwanego pliku; odmowa
+                                      nadpisania; macierz par zgodna z rejestrem
 
 
 6. WYKRYTE OGRANICZENIA
 -----------------------
 
-Testy potwierdziły ograniczenia opisane w README.txt:
+Testy potwierdziły ograniczenia opisane w README.md:
 - plik CSV w kodowaniu Windows-1250 (np. ze starszego Excela) nie jest
   konwertowany - program wyświetla komunikat ze wskazówką zapisu w UTF-8,
 - plik CSV ze średnikami jest traktowany jako jedna kolumna,
-- wartości logiczne JSON trafiają do CSV jako True/False,
 - wszystkie wartości z CSV trafiają do JSON jako tekst,
 - trwającej konwersji nie można anulować przyciskiem,
-- przy konwersji PDF -> TXT polskie znaki mogą zostać zniekształcone,
-  zależnie od czcionki użytej w PDF (zaobserwowane na Windowsie).
+- PDF z czcionką Cambria utworzony przez LibreOffice na Windowsie ma błędną
+  warstwę tekstu, więc PDF -> TXT daje zniekształcone polskie znaki.
 
 Możliwe usprawnienia: wybór separatora i kodowania w oknie programu,
 rozpoznawanie typów liczbowych, przycisk anulowania konwersji.

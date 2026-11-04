@@ -9,6 +9,11 @@ Biblioteka standardowa (nie wymaga instalacji):
 - csv          - odczyt i zapis plików CSV
 - json         - odczyt i zapis plików JSON
 - subprocess   - uruchamianie LibreOffice
+- logging      - dziennik programu (konwerter.log)
+- tempfile     - katalog tymczasowy na wynik konwersji (bezpieczne nadpisywanie)
+- zipfile, zlib - kontrola poprawności plików DOCX i ODT
+- unicodedata  - sklejanie znaków diakrytycznych w tekście z PDF
+- uuid         - unikalna nazwa przy próbnym zapisie do katalogu
 - shutil       - wyszukiwanie programu w PATH (shutil.which)
 - os, sys      - zmienne środowiskowe i rozpoznanie systemu operacyjnego
 - pathlib      - operacje na ścieżkach
@@ -54,7 +59,7 @@ NARZĘDZIA
 NARZĘDZIA AI
 ------------
 
-Narzędzie: Claude (Anthropic), używany przez aplikację Claude.
+Narzędzie: Claude (Anthropic), używany przez aplikację Claude oraz Claude Code.
 
 Powód użycia: słaba znajomość języka Python.
 
@@ -68,5 +73,8 @@ Zakres wsparcia:
   subprocess, Tkinter) oraz wskazanie miejsc do modyfikacji,
 - pomoc w przygotowaniu oczekiwanych wyników, testów automatycznych, sprawdzenie
   konwersji i przygotowanie dokumentacji (README, raport testów,
-  dziennik zmian).
+  dziennik zmian),
+- przegląd projektu względem instrukcji (Claude Code): kontrola uszkodzonych
+  plików DOCX/ODT, kontrola możliwości zapisu, bezpieczne nadpisywanie, dziennik
+  błędów, macierz par w oknie programu, dodatkowe testy i porządki w dokumentacji.
 
