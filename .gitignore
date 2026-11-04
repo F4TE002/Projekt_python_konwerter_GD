@@ -1,6 +1,7 @@
 # Pliki generowane przez program
 testy/wyniki/
 wyniki/
+*.log
 
 # Python
 __pycache__/
