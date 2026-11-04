@@ -305,6 +305,6 @@ Pełna historia zmian jest w repozytorium Git. Commity odpowiadają etapom proje
 - Grzegorz Dyląg – autor projektu.
 - Szkielet architektury (rejestr konwerterów, `ConversionRequest`, `execute`,
   konwerter DOCX → PDF) pochodzi z instrukcji projektowej przedmiotu.
-- Ze względu na słabą znajomość języka Python przy tworzeniu kodu, testów
-  i dokumentacji korzystano z narzędzi AI Claude i Claude Code (Anthropic).
+- Ze względu na słabą znajomość języka Python pisanie kodu, testów
+  i dokumentacji było wspomagane narzędziami AI Claude i Claude Code (Anthropic).
   Szczegóły i pozostałe źródła: `docs/ZRODLA.txt`.
