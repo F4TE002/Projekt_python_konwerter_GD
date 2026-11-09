@@ -34,14 +34,9 @@ def setup_logging(path: Path = LOG_FILE) -> None:
         print(f"Uwaga: nie można zapisać dziennika {path}: {e}")
 
 
-# ---------------------------------------------------------------------------
+
 # WSPÓLNY MODEL BŁĘDÓW
-# Każdy błąd konwersji dziedziczy po ConversionError i niesie:
-#   - tytuł (do nagłówka okna z komunikatem),
-#   - treść (co się stało),
-#   - wskazówkę (co użytkownik może zrobić).
-# Dzięki temu GUI i tryb skryptowy obsługują wszystkie błędy jednym "except".
-# ---------------------------------------------------------------------------
+
 
 class ConversionError(Exception):
     """Klasa bazowa wszystkich błędów konwersji."""
@@ -128,12 +123,7 @@ class ConversionRequest:
 
 
 def check_writable(directory: Path) -> None:
-    """Próbne utworzenie podkatalogu - tego samego potrzebuje później execute().
-
-    Nie używamy tu modułu tempfile: na Windowsie przy braku uprawnień ponawia on
-    próby prawie w nieskończoność, a program by zawisł. os.access też się nie
-    nadaje, bo na Windowsie nie sprawdza uprawnień do katalogów.
-    """
+    """Próbne utworzenie podkatalogu - tego samego potrzebuje później execute()."""
     probe = directory / f".konwerter_{uuid.uuid4().hex}"
     try:
         probe.mkdir()
@@ -157,10 +147,7 @@ def supported_targets() -> list[str]:
     return sorted({target for (src, target) in REGISTRY})
 
 
-# ---------------------------------------------------------------------------
 # LibreOffice: wykrywanie na Windows, macOS i Linux
-# ---------------------------------------------------------------------------
-
 # Zmienna środowiskowa, którą można wskazać LibreOffice w nietypowym miejscu
 LIBREOFFICE_ENV = "LIBREOFFICE_PATH"
 
@@ -259,7 +246,6 @@ def run_libreoffice(source: Path, output_dir: Path, target_ext: str, lo_format: 
 
 # TXT -> PDF / DOCX / ODT (LibreOffice)
 # ---------------------------------------------------------------------------
-
 # Wymuszamy odczyt pliku TXT jako UTF-8; bez tego LibreOffice na Windowsie
 # mógłby przyjąć kodowanie systemowe (Windows-1250) i zniekształcić polskie znaki.
 TXT_INFILTER = "Text (encoded):UTF8,LF,,,"
@@ -293,7 +279,6 @@ def txt_to_odt(source: Path, output_dir: Path) -> Path:
 
 # DOCX / ODT (LibreOffice)
 # ---------------------------------------------------------------------------
-
 # DOCX i ODT to archiwa ZIP; tu jest element, który musi się w nich znaleźć.
 OFFICE_MARKERS = {".docx": "word/", ".odt": "content.xml"}
 
@@ -342,8 +327,6 @@ def odt_to_docx(source: Path, output_dir: Path) -> Path:
     return office_via_libreoffice(source, output_dir, ".docx", "docx:MS Word 2007 XML")
 
 # ---------------------------------------------------------------------------
-
-
 # PDF -> TXT (biblioteka Pythona pypdf, bez narzędzia zewnętrznego)
 # ---------------------------------------------------------------------------
 
@@ -386,8 +369,6 @@ def pdf_to_txt(source: Path, output_dir: Path) -> Path:
     return target
 
 # ---------------------------------------------------------------------------
-
-
 # CSV -> JSON
 # ---------------------------------------------------------------------------
 
@@ -424,8 +405,6 @@ def csv_to_json(source: Path, output_dir: Path) -> Path:
     return target
 
 # ---------------------------------------------------------------------------
-
-
 # JSON -> CSV
 # ---------------------------------------------------------------------------
 
@@ -472,11 +451,7 @@ def json_to_csv(source: Path, output_dir: Path) -> Path:
             writer.writerow({k: json_cell(v) for k, v in item.items()})
     return target
 
-# ---------------------------------------------------------------------------
-
-
 # Uruchomienie konwersji
-# ---------------------------------------------------------------------------
 
 def execute(request: ConversionRequest) -> Path:
     key = (request.source.suffix.lower(), request.target_format.lower())

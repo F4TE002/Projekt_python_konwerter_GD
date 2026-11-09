@@ -49,21 +49,21 @@ class KonwerterApp:
         frame = ttk.Frame(root, padding=16)
         frame.grid()
 
-        # --- plik wejściowy ---
+        #plik wejściowy 
         ttk.Label(frame, text="Plik wejściowy:").grid(row=0, column=0, sticky="w", pady=4)
         ttk.Entry(frame, textvariable=self.source_var, width=50, state="readonly").grid(
             row=0, column=1, padx=8)
         self.file_btn = ttk.Button(frame, text="Wybierz plik…", command=self.choose_file)
         self.file_btn.grid(row=0, column=2, sticky="ew")
 
-        # --- katalog docelowy ---
+        #katalog docelowy
         ttk.Label(frame, text="Katalog docelowy:").grid(row=1, column=0, sticky="w", pady=4)
         ttk.Entry(frame, textvariable=self.output_var, width=50, state="readonly").grid(
             row=1, column=1, padx=8)
         self.dir_btn = ttk.Button(frame, text="Wybierz katalog…", command=self.choose_dir)
         self.dir_btn.grid(row=1, column=2, sticky="ew")
 
-        # --- format docelowy (lista zależna od rozszerzenia) ---
+        #format docelowy (lista zależna od rozszerzenia)
         ttk.Label(frame, text="Format docelowy:").grid(row=2, column=0, sticky="w", pady=4)
         self.format_box = ttk.Combobox(frame, textvariable=self.format_var,
                                        state="disabled", width=15)
@@ -71,14 +71,14 @@ class KonwerterApp:
         ttk.Button(frame, text="Obsługiwane pary…", command=self.show_matrix).grid(
             row=2, column=2, sticky="ew")
 
-        # --- komunikat + przycisk ---
+        #komunikat + przycisk
         ttk.Label(frame, textvariable=self.info_var, foreground="#555", wraplength=420).grid(
             row=3, column=0, columnspan=2, sticky="w", pady=(12, 0))
         self.convert_btn = ttk.Button(frame, text="Konwertuj", command=self.run_conversion,
                                       state="disabled")
         self.convert_btn.grid(row=3, column=2, sticky="ew", pady=(12, 0))
 
-        # --- pasek postępu (widoczny tylko podczas konwersji) ---
+        #pasek postępu (widoczny tylko podczas konwersji)
         self.progress = ttk.Progressbar(frame, mode="indeterminate")
         self.progress.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(12, 0))
         self.progress.grid_remove()
