@@ -2,11 +2,6 @@
 
 Uruchomienie: python gui.py
 Cała logika konwersji jest w konwerter.py - GUI tylko z niej korzysta.
-
-Konwersja działa w osobnym wątku, więc okno nie "zamarza" podczas
-dłuższych operacji (np. LibreOffice). Tkinter nie pozwala zmieniać okna
-z innego wątku, dlatego wątek roboczy tylko wkłada wynik do kolejki,
-a okno co 100 ms sprawdza kolejkę metodą root.after().
 """
 from pathlib import Path
 import queue
